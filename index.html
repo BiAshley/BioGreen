@@ -1,127 +1,244 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Firebase ROI Selector</title>
-    <style>
-        body, html { margin: 0; padding: 0; overflow: hidden; background: #000; height: 100vh; font-family: sans-serif; }
-        #game-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; opacity: 0.4; }
-        #selector-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; cursor: crosshair; }
-        #ui-panel { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.9); color: #fff; padding: 15px; border-radius: 12px; z-index: 20; width: 85%; text-align: center; border: 1px solid #ff9800; }
-        button { background: #ff9800; color: #000; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; }
-        #status { font-size: 13px; color: #0f0; margin-bottom: 5px; font-family: monospace; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VeriEco Auditoría - LegalTech</title>
+  
+  <!-- Estilos Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Librería de Escáner de Barras -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  
+  <!-- Firebase SDKs integrados con tu configuración -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyC_MyjSFLB-mHDWWaOfAlRetLDB_pAxgR0",
+        authDomain: "ango-592a4.firebaseapp.com",
+        databaseURL: "https://ango-592a4-default-rtdb.firebaseio.com",
+        projectId: "ango-592a4",
+        storageBucket: "ango-592a4.firebasestorage.app",
+        messagingSenderId: "234305709468",
+        appId: "1:234305709468:web:4a3009360c6033649dd459",
+        measurementId: "G-4YVSD60SP6"
+    };
+    firebase.initializeApp(firebaseConfig);
+    console.log("Firebase conectado correctamente a: ", firebaseConfig.projectId);
+  </script>
+
+  <style>
+    #reader video {
+      object-fit: cover !important;
+      border-radius: 0.75rem;
+      width: 100% !important;
+      min-height: 220px;
+    }
+  </style>
 </head>
-<body>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen pb-12">
 
-    <video id="game-video" autoplay playsinline></video>
-    <canvas id="selector-canvas"></canvas>
+  <header class="bg-slate-900 text-white py-5 px-4 shadow-md border-b border-emerald-500">
+    <div class="max-w-md mx-auto text-center">
+      <span class="bg-emerald-500/20 text-emerald-400 text-xs font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider border border-emerald-500/30">GitHub & Firebase Project</span>
+      <h1 class="text-2xl font-extrabold mt-2 tracking-tight">VeriEco Auditoría</h1>
+      <p class="text-xs text-slate-400 mt-1">Detección de Greenwashing y Protección al Consumidor (Ley 1480)</p>
+    </div>
+  </header>
 
-    <div id="ui-panel">
-        <div id="status">SISTEMA LISTO: INICIA CAPTURA</div>
-        <button id="btn-start">INICIAR LECTURA PANTALLA</button>
+  <main class="max-w-md mx-auto px-4 mt-6">
+
+    <!-- Tarjeta del Escáner -->
+    <div id="scanner-card" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+      <h2 class="text-sm font-bold text-slate-700 mb-2">Escáner de Código de Barras (EAN-13)</h2>
+      
+      <div id="reader" class="w-full bg-slate-900 rounded-lg overflow-hidden min-h-[220px]"></div>
+
+      <p class="text-xs text-slate-500 text-center mt-3">Apunta la cámara al código de barras del producto.</p>
+
+      <div class="mt-4 pt-3 border-t border-slate-100 flex gap-2">
+        <input type="text" id="manual-ean" placeholder="Ej. 7300400481588" class="flex-1 text-xs px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        <button onclick="buscarPorManual()" class="bg-slate-800 text-white text-xs px-4 py-2 rounded-lg font-medium hover:bg-slate-700">Buscar</button>
+      </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    <!-- Pruebas Rápidas -->
+    <div class="mt-4 bg-emerald-50/60 p-3 rounded-xl border border-emerald-100">
+      <p class="text-xs font-semibold text-emerald-900 mb-2">⚡ Pruebas rápidas para demostración:</p>
+      <div class="grid grid-cols-2 gap-2">
+        <button onclick="simularAudit('7300400481588', 'Jabón Nutritivo Bio', 'EcoBeauty', true, 'sulfate paraben petrolatum')" class="bg-white p-2 rounded border border-emerald-200 text-left hover:border-emerald-400 shadow-sm">
+          <p class="text-[11px] font-bold text-slate-800">Prueba 1: Riesgo Alto</p>
+          <p class="text-[10px] text-red-600 font-medium">Eco/Bio con Sulfatos</p>
+        </button>
+        <button onclick="simularAudit('3017620422003', 'Nutella Cream 350g', 'Ferrero', false, 'palm oil sugar')" class="bg-white p-2 rounded border border-emerald-200 text-left hover:border-emerald-400 shadow-sm">
+          <p class="text-[11px] font-bold text-slate-800">Prueba 2: Convencional</p>
+          <p class="text-[10px] text-slate-500">Sin Claim Verde</p>
+        </button>
+      </div>
+    </div>
 
-        // Tu configuración que proporcionaste
-        const firebaseConfig = {
-            apiKey: "AIzaSyC_MyjSFLB-mHDWWaOfAlRetLDB_pAxgR0",
-            authDomain: "ango-592a4.firebaseapp.com",
-            databaseURL: "https://ango-592a4-default-rtdb.firebaseio.com",
-            projectId: "ango-592a4",
-            storageBucket: "ango-592a4.firebasestorage.app",
-            messagingSenderId: "234305709468",
-            appId: "1:234305709468:web:4a3009360c6033649dd459",
-            measurementId: "G-4YVSD60SP6"
-        };
+    <!-- Resultados -->
+    <div id="result-card" class="hidden mt-6 bg-white p-5 rounded-xl shadow-md border border-slate-200">
+      <div id="badge-container" class="mb-3"></div>
+      <h3 id="res-product-name" class="text-lg font-bold text-slate-900 leading-snug">--</h3>
+      <p class="text-xs text-slate-500 mt-1"><strong>Marca:</strong> <span id="res-brand">--</span> | <strong>EAN:</strong> <span id="res-code">--</span></p>
 
-        // Inicializar Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
+      <div class="my-4 border-t border-slate-100"></div>
 
-        // Variables de UI y Canvas
-        const video = document.getElementById('game-video');
-        const canvas = document.getElementById('selector-canvas');
-        const ctx = canvas.getContext('2d');
-        const btn = document.getElementById('btn-start');
-        const status = document.getElementById('status');
+      <div class="mb-4">
+        <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Dictamen Técnico:</h4>
+        <p id="res-analysis" class="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-100">--</p>
+      </div>
 
-        let isDrawing = false;
-        let startX, startY;
-        let roi = { x: 0, y: 0, w: 0, h: 0 };
+      <div class="mb-5 bg-blue-50/70 p-3 rounded-lg border-l-4 border-blue-600">
+        <h4 class="text-xs font-bold text-blue-900 uppercase tracking-wider mb-1">Fundamento Jurídico:</h4>
+        <p id="res-legal" class="text-xs text-blue-800 leading-relaxed">--</p>
+      </div>
 
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+      <div id="denuncia-box" class="hidden mb-4">
+        <button onclick="generarBorradorDenuncia()" class="w-full bg-red-600 text-white text-xs py-2.5 px-4 rounded-lg font-bold hover:bg-red-700 transition">
+          Generar Denuncia para la SIC (Colombia)
+        </button>
+      </div>
 
-        // --- 1. Iniciar Captura ---
-        btn.onclick = async () => {
-            try {
-                const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-                video.srcObject = stream;
-                status.innerText = "DIBUJA EL RECUADRO EN PANTALLA";
-                btn.style.display = "none";
-            } catch (err) {
-                status.innerText = "ERROR: " + err.message;
-            }
-        };
+      <div id="denuncia-text-container" class="hidden mb-4 p-3 bg-slate-900 text-slate-100 rounded-lg text-[10px] font-mono leading-relaxed overflow-x-auto">
+        <div class="flex justify-between items-center mb-2 pb-1 border-b border-slate-700">
+          <span class="font-bold text-emerald-400">Modelo Radicado SIC:</span>
+          <button onclick="copiarDenuncia()" class="text-xs bg-slate-700 px-2 py-0.5 rounded text-white">Copiar</button>
+        </div>
+        <pre id="denuncia-content" class="whitespace-pre-wrap"></pre>
+      </div>
 
-        // --- 2. Eventos Táctiles ---
-        canvas.addEventListener('touchstart', (e) => {
-            isDrawing = true;
-            startX = e.touches[0].clientX;
-            startY = e.touches[0].clientY;
-        });
+      <button onclick="reiniciarApp()" class="w-full bg-slate-800 text-white text-xs py-2.5 rounded-lg font-semibold hover:bg-slate-700">Escanear Otro</button>
+    </div>
 
-        canvas.addEventListener('touchmove', (e) => {
-            if (!isDrawing) return;
-            const curX = e.touches[0].clientX;
-            const curY = e.touches[0].clientY;
+  </main>
 
-            roi.x = Math.min(startX, curX);
-            roi.y = Math.min(startY, curY);
-            roi.w = Math.abs(startX - curX);
-            roi.h = Math.abs(startY - curY);
+  <script>
+    let html5QrCode;
 
-            drawSelection();
-        });
+    function inicializarEscaner() {
+      html5QrCode = new Html5Qrcode("reader");
+      html5QrCode.start(
+        { facingMode: "environment" }, 
+        { fps: 10, qrbox: { width: 220, height: 140 } }, 
+        onScanSuccess
+      ).catch(err => {
+        console.warn("Cámara no disponible, usa entrada manual o pruebas rápidas:", err);
+      });
+    }
 
-        canvas.addEventListener('touchend', () => {
-            isDrawing = false;
-            saveToFirebase();
-        });
+    function onScanSuccess(decodedText) {
+      if(html5QrCode && html5QrCode.isScanning) {
+        html5QrCode.stop().then(() => consultarAPI(decodedText));
+      } else {
+        consultarAPI(decodedText);
+      }
+    }
 
-        function drawSelection() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.strokeStyle = "#ff9800";
-            ctx.lineWidth = 3;
-            ctx.setLineDash([5, 5]); // Línea punteada
-            ctx.strokeRect(roi.x, roi.y, roi.w, roi.h);
+    function buscarPorManual() {
+      const ean = document.getElementById('manual-ean').value.trim();
+      if(ean) {
+        if(html5QrCode && html5QrCode.isScanning) {
+          html5QrCode.stop().then(() => consultarAPI(ean));
+        } else {
+          consultarAPI(ean);
         }
+      }
+    }
 
-        // --- 3. Guardar en Firebase ---
-        function saveToFirebase() {
-            status.innerText = "GUARDANDO EN CLOUD...";
-            
-            // Referencia en la base de datos (sección 'current_roi')
-            const roiRef = ref(db, 'macros/osrs_config');
-            
-            set(roiRef, {
-                x: Math.round(roi.x),
-                y: Math.round(roi.y),
-                width: Math.round(roi.w),
-                height: Math.round(roi.h),
-                timestamp: Date.now()
-            }).then(() => {
-                status.innerText = "✅ COORDENADAS SINCRONIZADAS";
-                setTimeout(() => status.innerText = "DIBUJA OTRA ZONA O ABRE OSRS", 2000);
-            }).catch((error) => {
-                status.innerText = "❌ ERROR DB: " + error.message;
-            });
-        }
-    </script>
+    function consultarAPI(codigo) {
+      mostrarCargando();
+      fetch(`https://world.openfoodfacts.org/api/v2/product/${codigo}.json`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === 1) {
+            const p = data.product;
+            const et = (p.labels_tags || []).join(" ").toLowerCase();
+            const ing = p.ingredients_text ? p.ingredients_text.toLowerCase() : "";
+            const claims = et.includes("natural") || et.includes("bio") || et.includes("eco");
+            const quimicos = ing.includes("paraben") || ing.includes("sulfate") || ing.includes("petrolatum");
+            ejecutarDictamen(p.product_name || "Producto", p.brands || "Marca N/D", codigo, claims, quimicos, ing);
+          } else {
+            ejecutarDictamen("Producto No Registrado", "Desconocida", codigo, false, false, "Sin datos de ingredientes.");
+          }
+        })
+        .catch(() => ejecutarDictamen("Error de Red", "N/A", codigo, false, false, "Comprueba tu conexión a internet."));
+    }
+
+    function simularAudit(codigo, nombre, marca, claims, quimicos) {
+      if(html5QrCode && html5QrCode.isScanning) html5QrCode.stop();
+      mostrarCargando();
+      setTimeout(() => {
+        ejecutarDictamen(nombre, marca, codigo, claims, quimicos, "ingredientes sintéticos de prueba detectados");
+      }, 400);
+    }
+
+    function ejecutarDictamen(nombre, marca, codigo, claims, quimicos, ing) {
+      document.getElementById('scanner-card').classList.add('hidden');
+      document.getElementById('result-card').classList.remove('hidden');
+
+      document.getElementById('res-product-name').innerText = nombre;
+      document.getElementById('res-brand').innerText = marca;
+      document.getElementById('res-code').innerText = codigo;
+
+      let badge = '', analisis = '', legal = '', verDenuncia = false;
+
+      if (claims && quimicos) {
+        badge = `<span class="bg-red-100 text-red-800 border border-red-300 text-[11px] font-extrabold px-3 py-1 rounded-full inline-block">🚨 RIESGO ALTO: GREENWASHING</span>`;
+        analisis = `El producto exhibe alegaciones ecológicas ("Bio/Eco/Natural"), pero contiene componentes sintéticos (${ing.substring(0, 50)}...). Inconsistencia publicitaria directa.`;
+        legal = `<strong>Ley 1480 (Art. 29 - Publicidad Engañosa):</strong> Prohíbe inducir a error al consumidor.<br><strong>Decreto 1369:</strong> Exige soporte probatorio estricto para afirmaciones ambientales.`;
+        verDenuncia = true;
+      } else if (claims) {
+        badge = `<span class="bg-amber-100 text-amber-800 border border-amber-300 text-[11px] font-bold px-3 py-1 rounded-full inline-block">⚠️ ALERTA: FALTA DE SOPORTE</span>`;
+        analisis = `Usa términos ambientales pero carece de registros de certificación independiente auditada.`;
+        legal = `<strong>Ley 1480 (Art. 23 - Derecho a la Información):</strong> La información comercial debe ser transparente y comprobable.`;
+      } else {
+        badge = `<span class="bg-emerald-100 text-emerald-800 border border-emerald-300 text-[11px] font-bold px-3 py-1 rounded-full inline-block">✅ CONFORME</span>`;
+        analisis = `No se detectan discrepancias graves entre el etiquetado promocional y sus componentes.`;
+        legal = `Cumplimiento general de las normas de idoneidad e información veraz.`;
+      }
+
+      document.getElementById('badge-container').innerHTML = badge;
+      document.getElementById('res-analysis').innerHTML = analisis;
+      document.getElementById('res-legal').innerHTML = legal;
+
+      if(verDenuncia) {
+        document.getElementById('denuncia-box').classList.remove('hidden');
+      } else {
+        document.getElementById('denuncia-box').classList.add('hidden');
+      }
+    }
+
+    function generarBorradorDenuncia() {
+      const nombre = document.getElementById('res-product-name').innerText;
+      const marca = document.getElementById('res-brand').innerText;
+      const codigo = document.getElementById('res-code').innerText;
+      const texto = `SUPERINTENDENCIA DE INDUSTRIA Y COMERCIO (SIC)\nAsunto: Denuncia por Publicidad Engañosa (Greenwashing)\nProducto: ${nombre} (${marca}) - EAN: ${codigo}\n\nSe solicita investigación por posible infracción al Art. 29 de la Ley 1480 de 2011 y Decreto 1369 por incongruencia en alegaciones ambientales.`;
+      document.getElementById('denuncia-content').innerText = texto;
+      document.getElementById('denuncia-text-container').classList.remove('hidden');
+    }
+
+    function copiarDenuncia() {
+      navigator.clipboard.writeText(document.getElementById('denuncia-content').innerText);
+      alert("¡Denuncia copiada!");
+    }
+
+    function mostrarCargando() {
+      document.getElementById('scanner-card').classList.add('hidden');
+      document.getElementById('result-card').classList.remove('hidden');
+      document.getElementById('res-product-name').innerText = "Analizando base de datos...";
+      document.getElementById('badge-container').innerHTML = `<span class="bg-slate-200 text-slate-700 text-xs px-3 py-1 rounded-full font-bold animate-pulse">PROCESANDO...</span>`;
+    }
+
+    function reiniciarApp() {
+      document.getElementById('result-card').classList.add('hidden');
+      document.getElementById('denuncia-text-container').classList.add('hidden');
+      document.getElementById('scanner-card').classList.remove('hidden');
+      inicializarEscaner();
+    }
+
+    window.onload = inicializarEscaner;
+  </script>
 </body>
 </html>
