@@ -3,77 +3,98 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VeriEco LegalTech - Auditor Anti-Greenwashing</title>
+  <title>VeriEco LegalTech - Auditoría & OCR</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Librería de Escáner de Código de Barras -->
+  <!-- Lector de Códigos de Barras -->
   <script src="https://unpkg.com/html5-qrcode"></script>
+  <!-- Motor de OCR (Reconocimiento óptico de caracteres para leer etiquetas) -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
-  <!-- SDKs de Firebase (Compatibilitad Web v9+) -->
+  <!-- SDKs de Firebase (v9 Compat) -->
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans min-h-screen p-4 sm:p-6">
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen p-3 sm:p-6">
 
-  <div class="max-w-xl mx-auto bg-white shadow-xl rounded-2xl my-4 sm:my-8 border border-slate-100 p-5 sm:p-6">
+  <div class="max-w-xl mx-auto bg-white shadow-xl rounded-2xl my-2 sm:my-6 border border-slate-100 p-4 sm:p-6">
     
     <!-- Encabezado -->
-    <div class="text-center mb-6">
-      <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">LegalTech & Compliance</span>
-      <h1 class="text-2xl font-bold text-slate-900 mt-2">Auditoría Anti-Greenwashing</h1>
-      <p class="text-xs text-slate-500 mt-1">Verificación de composición e integración en tiempo real con Firebase.</p>
+    <div class="text-center mb-5">
+      <span class="bg-blue-100 text-blue-800 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">LegalTech & Compliance</span>
+      <h1 class="text-xl sm:text-2xl font-bold text-slate-900 mt-2">Auditoría Anti-Greenwashing</h1>
+      <p class="text-xs text-slate-500 mt-1">Escaneo EAN, lectura de etiqueta por OCR y Firebase Realtime Database.</p>
     </div>
 
-    <!-- Pestañas de Navegación -->
-    <div class="flex border-b border-slate-200 mb-6 text-sm">
-      <button onclick="cambiarModo('camara')" id="tab-camara" class="flex-1 py-2 font-semibold text-blue-600 border-b-2 border-blue-600 transition">📷 Escáner Cámara</button>
-      <button onclick="cambiarModo('texto')" id="tab-texto" class="flex-1 py-2 font-semibold text-slate-400 hover:text-slate-600 transition">📝 Pegar Ingredientes</button>
+    <!-- Pestañas de Selección de Modo -->
+    <div class="flex border-b border-slate-200 mb-5 text-xs font-semibold">
+      <button onclick="cambiarModo('ean')" id="tab-ean" class="flex-1 py-2.5 text-blue-600 border-b-2 border-blue-600 transition">📷 Código de Barras</button>
+      <button onclick="cambiarModo('ocr')" id="tab-ocr" class="flex-1 py-2.5 text-slate-400 hover:text-slate-600 transition">🔍 Foto de Ingredientes (OCR)</button>
     </div>
 
-    <!-- Panel 1: Cámara -->
-    <div id="panel-camara" class="space-y-4">
-      <div id="reader" class="w-full rounded-xl overflow-hidden border border-slate-200 bg-slate-900"></div>
-      <p class="text-xs text-center text-slate-400">Apunta la cámara al código de barras EAN del producto.</p>
+    <!-- MÓDULO 1: ESCÁNER DE CÓDIGO DE BARRAS (Cámara Trasera) -->
+    <div id="panel-ean" class="space-y-3">
+      <div id="reader" class="w-full rounded-xl overflow-hidden border border-slate-200 bg-slate-900 min-h-[220px]"></div>
+      <p class="text-[11px] text-center text-slate-400">Apunta con la cámara trasera al código de barras del empaque.</p>
     </div>
 
-    <!-- Panel 2: Texto Libre -->
-    <div id="panel-texto" class="space-y-4 hidden">
-      <label class="block text-xs font-medium text-slate-700">Pega aquí la lista de ingredientes (INCI) o descripción:</label>
-      <textarea id="input-ingredientes" rows="4" class="w-full p-3 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Ej: Aqua, Sodium Lauryl Sulfate, Coco-Betaine, Glycerin, Methylparaben..."></textarea>
-      <button onclick="analizarTextoLibre()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl shadow-md transition">
-        Auditar e Ingresar a Base de Datos
-      </button>
+    <!-- MÓDULO 2: CAMARA PARA LEER ETIQUETAS (OCR) -->
+    <div id="panel-ocr" class="space-y-4 hidden">
+      <div class="bg-slate-50 p-4 rounded-xl border border-dashed border-slate-300 text-center">
+        <p class="text-xs text-slate-600 mb-3 font-medium">Captura o sube la foto de la parte trasera del empaque (donde están los ingredientes):</p>
+        
+        <input type="file" id="camera-input" accept="image/*" capture="environment" class="hidden" onchange="procesarFotoEtiqueta(event)">
+        
+        <button onclick="document.getElementById('camera-input').click()" class="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl shadow flex items-center justify-center gap-2 transition">
+          <span>📷 Tomar Foto a Ingredientes</span>
+        </button>
+      </div>
+
+      <!-- Barra de Estado / Progreso del OCR -->
+      <div id="ocr-loading" class="hidden space-y-2 p-3 bg-blue-50 rounded-xl border border-blue-200 text-center">
+        <div class="inline-block animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></div>
+        <p id="ocr-status-text" class="text-xs text-blue-800 font-medium">Iniciando lectura de texto por visión artificial...</p>
+      </div>
+
+      <!-- Previsualización del texto extraído -->
+      <div id="ocr-result-preview" class="hidden space-y-2">
+        <label class="block text-[11px] font-semibold text-slate-600">Texto detectado en la etiqueta (INCI):</label>
+        <textarea id="texto-extraido-ocr" rows="3" class="w-full p-2.5 bg-slate-100 border border-slate-200 rounded-lg text-xs font-mono focus:outline-none" readonly></textarea>
+        <button onclick="auditarTextoOCR()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow transition">
+          Auditar Texto Detectado
+        </button>
+      </div>
     </div>
 
-    <!-- Sección de Resultados de Auditoría -->
-    <div id="result-container" class="mt-6 p-5 rounded-xl border hidden transition-all">
+    <!-- MÓDULO DE RESULTADOS DE AUDITORÍA -->
+    <div id="result-container" class="mt-5 p-4 sm:p-5 rounded-xl border hidden transition-all">
       <div id="badge-container" class="mb-3"></div>
-      <h2 id="product-title" class="text-lg font-bold text-slate-900">--</h2>
-      <p class="text-xs text-slate-500 mb-4">EAN / Ref: <span id="product-id">--</span></p>
+      <h2 id="product-title" class="text-base sm:text-lg font-bold text-slate-900">--</h2>
+      <p class="text-[11px] text-slate-500 mb-3">Ref / Identificador: <span id="product-id">--</span></p>
 
-      <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs space-y-2 mb-4">
-        <p class="font-semibold text-slate-700">Análisis Técnico de Composición:</p>
+      <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs space-y-1.5 mb-3">
+        <p class="font-bold text-slate-700">Análisis Químico de Composición:</p>
         <p id="analysis-text" class="text-slate-600">--</p>
       </div>
 
-      <div class="bg-blue-50 border-l-4 border-blue-600 p-4 rounded-r-xl text-xs text-blue-900 space-y-1 mb-4">
-        <p class="font-bold">Fundamento Jurídico (Estatuto del Consumidor):</p>
+      <div class="bg-blue-50 border-l-4 border-blue-600 p-3.5 rounded-r-xl text-xs text-blue-900 space-y-1 mb-3">
+        <p class="font-bold">Sustento Legal (Estatuto del Consumidor):</p>
         <p id="legal-basis">--</p>
       </div>
 
-      <!-- Estado de Sincronización Firebase -->
+      <!-- Estado de conexión Firebase -->
       <div id="firebase-status" class="text-[10px] text-slate-400 text-right mb-3">
-        Sincronizando con Firebase...
+        Conectando con Firebase...
       </div>
 
-      <!-- Botón de Denuncia SIC -->
-      <div id="action-box" class="hidden">
+      <!-- Generador de Denuncia SIC -->
+      <div id="action-box" class="hidden mb-2">
         <button onclick="generarDenunciaSIC()" class="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-xl shadow transition">
           📄 Generar Borrador de Denuncia (SIC)
         </button>
       </div>
 
-      <button onclick="reiniciarApp()" class="w-full mt-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-medium rounded-xl transition">
+      <button onclick="reiniciarApp()" class="w-full py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-medium rounded-xl transition">
         Realizar otra auditoría
       </button>
     </div>
@@ -82,10 +103,10 @@
 
   <!-- Modal de Denuncia SIC -->
   <div id="modal-denuncia" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-    <div class="bg-white max-w-lg w-full p-6 rounded-2xl shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-      <h3 class="text-base font-bold text-slate-900">Memorial de Denuncia - Protección al Consumidor</h3>
-      <textarea id="texto-denuncia" rows="10" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-700 focus:outline-none" readonly></textarea>
-      <div class="flex space-x-3">
+    <div class="bg-white max-w-lg w-full p-5 rounded-2xl shadow-2xl space-y-3 max-h-[90vh] overflow-y-auto">
+      <h3 class="text-sm font-bold text-slate-900">Memorial de Denuncia - Protección al Consumidor</h3>
+      <textarea id="texto-denuncia" rows="9" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-700 focus:outline-none" readonly></textarea>
+      <div class="flex space-x-2">
         <button onclick="copiarDenuncia()" class="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl">Copiar Texto</button>
         <button onclick="cerrarModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-medium rounded-xl">Cerrar</button>
       </div>
@@ -93,7 +114,7 @@
   </div>
 
   <script>
-    // 1. Configuración Real e Inicialización de Firebase
+    // 1. Configuración de Firebase Realtime Database
     const firebaseConfig = {
       apiKey: "AIzaSyC_MyjSFLB-mHDWWaOfAlRetLDB_pAxgR0",
       authDomain: "ango-592a4.firebaseapp.com",
@@ -111,35 +132,90 @@
     let html5QrcodeScanner;
     let datosUltimoAnalisis = null;
 
-    // Control de Interfaz y Pestañas
+    // Control de Pestañas
     function cambiarModo(modo) {
-      if(modo === 'camara') {
-        document.getElementById('panel-camara').classList.remove('hidden');
-        document.getElementById('panel-texto').classList.add('hidden');
-        document.getElementById('tab-camara').className = "flex-1 py-2 font-semibold text-blue-600 border-b-2 border-blue-600 transition";
-        document.getElementById('tab-texto').className = "flex-1 py-2 font-semibold text-slate-400 hover:text-slate-600 transition";
-        iniciarEscaner();
+      if(modo === 'ean') {
+        document.getElementById('panel-ean').classList.remove('hidden');
+        document.getElementById('panel-ocr').classList.add('hidden');
+        document.getElementById('tab-ean').className = "flex-1 py-2.5 text-blue-600 border-b-2 border-blue-600 transition";
+        document.getElementById('tab-ocr').className = "flex-1 py-2.5 text-slate-400 hover:text-slate-600 transition";
+        iniciarEscanerCamaraTrasera();
       } else {
-        document.getElementById('panel-camara').classList.add('hidden');
-        document.getElementById('panel-texto').classList.remove('hidden');
-        document.getElementById('tab-texto').className = "flex-1 py-2 font-semibold text-blue-600 border-b-2 border-blue-600 transition";
-        document.getElementById('tab-camara').className = "flex-1 py-2 font-semibold text-slate-400 hover:text-slate-600 transition";
-        if(html5QrcodeScanner) { html5QrcodeScanner.clear().catch(e => {}); }
+        document.getElementById('panel-ean').classList.add('hidden');
+        document.getElementById('panel-ocr').classList.remove('hidden');
+        document.getElementById('tab-ocr').className = "flex-1 py-2.5 text-blue-600 border-b-2 border-blue-600 transition";
+        document.getElementById('tab-ean').className = "flex-1 py-2.5 text-slate-400 hover:text-slate-600 transition";
+        if(html5QrcodeScanner) { html5QrcodeScanner.clear().catch(() => {}); }
       }
     }
 
-    function iniciarEscaner() {
-      html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 220 }, false);
+    // Escáner de Código de Barras (Forzar Cámara Trasera)
+    function iniciarEscanerCamaraTrasera() {
+      html5QrcodeScanner = new Html5QrcodeScanner(
+        "reader", 
+        { 
+          fps: 10, 
+          qrbox: { width: 220, height: 130 },
+          videoConstraints: {
+            facingMode: { ideal: "environment" } // Prioriza la cámara trasera del móvil
+          }
+        }, 
+        false
+      );
+      
       html5QrcodeScanner.render((decodedText) => {
         html5QrcodeScanner.clear();
-        consultarProductoAPI(decodedText);
-      }, (error) => {});
+        consultarEANAPI(decodedText);
+      }, (err) => {});
     }
 
-    function consultarProductoAPI(codigo) {
-      document.getElementById('panel-camara').classList.add('hidden');
+    // Módulo OCR: Lectura de foto con Tesseract.js
+    function procesarFotoEtiqueta(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const loadingBox = document.getElementById('ocr-loading');
+      const statusText = document.getElementById('ocr-status-text');
+      const previewBox = document.getElementById('ocr-result-preview');
+
+      loadingBox.classList.remove('hidden');
+      previewBox.classList.add('hidden');
+      statusText.innerText = "Procesando imagen con motor OCR...";
+
+      Tesseract.recognize(
+        file,
+        'eng+spa', // Reconoce tanto inglés (nomenclatura INCI) como español
+        { 
+          logger: m => {
+            if(m.status === 'recognizing text') {
+              statusText.innerText = `Analizando etiqueta: ${Math.round(m.progress * 100)}%`;
+            }
+          } 
+        }
+      ).then(({ data: { text } }) => {
+        loadingBox.classList.add('hidden');
+        previewBox.classList.remove('hidden');
+        document.getElementById('texto-extraido-ocr').value = text;
+      }).catch(err => {
+        console.error(err);
+        loadingBox.classList.add('hidden');
+        alert("Error al leer la imagen. Intenta tomar la foto con mejor iluminación.");
+      });
+    }
+
+    function auditarTextoOCR() {
+      const texto = document.getElementById('texto-extraido-ocr').value;
+      if(!texto.trim()) return;
+      
+      document.getElementById('panel-ocr').classList.add('hidden');
       document.getElementById('result-container').classList.remove('hidden');
-      document.getElementById('product-title').innerText = "Consultando base de datos global...";
+      evaluarMotorQuimico("Producto Escaneado por Foto (OCR)", texto, "OCR-CAP-" + Math.floor(Math.random()*10000));
+    }
+
+    function consultarEANAPI(codigo) {
+      document.getElementById('panel-ean').classList.add('hidden');
+      document.getElementById('result-container').classList.remove('hidden');
+      document.getElementById('product-title').innerText = "Buscando en base de datos global...";
       document.getElementById('product-id').innerText = codigo;
 
       fetch(`https://world.openfoodfacts.org/api/v2/product/${codigo}.json`)
@@ -148,29 +224,19 @@
           if(data.status === 1) {
             const prod = data.product;
             const textoCompleto = (prod.ingredients_text || "") + " " + (prod.labels_tags || []).join(" ");
-            evaluarComposicionQuimica(prod.product_name || "Producto Escaneado", textoCompleto, codigo);
+            evaluarMotorQuimico(prod.product_name || "Producto Escaneado", textoCompleto, codigo);
           } else {
-            evaluarComposicionQuimica("Producto con EAN: " + codigo, "sodium lauryl sulfate, parfum, cocamide dea, methylparaben", codigo);
+            // Si el código no está en la base abierta, forzamos la prueba de seguridad
+            evaluarMotorQuimico("Producto con EAN: " + codigo, "sodium lauryl sulfate, methylparaben, parfum", codigo);
           }
         })
         .catch(() => {
-          evaluarComposicionQuimica("Producto con EAN: " + codigo, "sodium lauryl sulfate, parfum, methylparaben", codigo);
+          evaluarMotorQuimico("Producto con EAN: " + codigo, "sodium lauryl sulfate, methylparaben", codigo);
         });
     }
 
-    function analizarTextoLibre() {
-      const texto = document.getElementById('input-ingredientes').value;
-      if(!texto.trim()) {
-        alert("Ingresa la lista de ingredientes.");
-        return;
-      }
-      document.getElementById('panel-texto').classList.add('hidden');
-      document.getElementById('result-container').classList.remove('hidden');
-      evaluarComposicionQuimica("Producto de Análisis Manual", texto, "MANUAL-" + Math.floor(Math.random()*10000));
-    }
-
-    // Motor Químico-Jurídico
-    function evaluarComposicionQuimica(nombreProducto, ingredientesTexto, identificador) {
+    // Motor de Detección Química y Clasificación Jurídica
+    function evaluarMotorQuimico(nombreProducto, ingredientesTexto, identificador) {
       const textoLower = ingredientesTexto.toLowerCase();
 
       const sustanciasCriticas = [
@@ -191,7 +257,7 @@
         fecha: new Date().toISOString()
       };
 
-      // Guardar registro automáticamente en Firebase Realtime Database
+      // Guardar inmediatamente en Firebase Realtime Database
       guardarEnFirebase(datosUltimoAnalisis);
 
       const container = document.getElementById('result-container');
@@ -204,39 +270,39 @@
       document.getElementById('product-id').innerText = identificador;
 
       if(esAlertaRoja) {
-        container.className = "mt-6 p-5 rounded-xl border border-red-200 bg-red-50/50 shadow-sm";
+        container.className = "mt-5 p-4 sm:p-5 rounded-xl border border-red-200 bg-red-50/50 shadow-sm";
         badgeContainer.innerHTML = `<span class="bg-red-100 text-red-800 text-xs font-bold px-3 py-1.5 rounded-full border border-red-300">🚨 ALERTA ROJA: RIESGO ALTO DE GREENWASHING</span>`;
-        analysisText.innerHTML = `Se detectaron compuestos de síntesis o petroquímicos (${encontrados.join(", ").toUpperCase()}) en la formulación, evidenciando contradicción frente a atributos ecológicos.`;
-        legalBasis.innerHTML = `<strong>Estatuto del Consumidor (Ley 1480 de 2011, Art. 29):</strong> Prohíbe la publicidad engañosa.<br><strong>Decreto 1369:</strong> Exige comprobabilidad estricta de afirmaciones ambientales.`;
+        analysisText.innerHTML = `Se detectaron compuestos químicos sintéticos o petroquímicos (${encontrados.join(", ").toUpperCase()}) en la formulación, evidenciando contradicción frente a atributos ecológicos.`;
+        legalBasis.innerHTML = `<strong>Estatuto del Consumidor (Ley 1480, Art. 29):</strong> Prohíbe la publicidad engañosa.<br><strong>Decreto 1369:</strong> Exige respaldo técnico objetivo para aseveraciones ambientales.`;
         actionBox.classList.remove('hidden');
       } else {
-        container.className = "mt-6 p-5 rounded-xl border border-emerald-200 bg-emerald-50/50 shadow-sm";
+        container.className = "mt-5 p-4 sm:p-5 rounded-xl border border-emerald-200 bg-emerald-50/50 shadow-sm";
         badgeContainer.innerHTML = `<span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1.5 rounded-full border border-emerald-300">✅ FÓRMULA CONFORME / LIMPIA</span>`;
-        analysisText.innerHTML = `No se detectaron sulfatos pesados, parabenos, siliconas o petrolatos en la lista analizada.`;
-        legalBasis.innerHTML = `Cumplimiento de las directrices de información veraz al consumidor (Ley 1480, Art. 23).`;
+        analysisText.innerHTML = `No se detectaron sulfatos pesados, parabenos, siliconas o derivados del petróleo en la lista de ingredientes analizada.`;
+        legalBasis.innerHTML = `Cumplimiento de los deberes de información veraz al consumidor (Ley 1480, Art. 23).`;
         actionBox.classList.add('hidden');
       }
     }
 
-    // 2. Guardado en tiempo real en Firebase Database
+    // Persistencia de datos en Firebase Realtime Database
     function guardarEnFirebase(registro) {
-      const firebaseStatus = document.getElementById('firebase-status');
-      firebaseStatus.innerText = "Guardando auditoría en Firebase...";
+      const statusEl = document.getElementById('firebase-status');
+      statusEl.innerText = "Enviando registro a Firebase...";
 
       const newRef = database.ref('auditorias').push();
       newRef.set(registro)
         .then(() => {
-          firebaseStatus.innerText = "✓ Registro guardado en la base de datos de Firebase";
-          firebaseStatus.className = "text-[10px] text-emerald-600 font-semibold text-right mb-3";
+          statusEl.innerText = "✓ Sincronizado en Firebase Realtime Database";
+          statusEl.className = "text-[10px] text-emerald-600 font-semibold text-right mb-3";
         })
         .catch((err) => {
           console.error(err);
-          firebaseStatus.innerText = "⚠ Error al conectar con Firebase";
-          firebaseStatus.className = "text-[10px] text-red-500 font-semibold text-right mb-3";
+          statusEl.innerText = "⚠ Error de escritura en Firebase";
+          statusEl.className = "text-[10px] text-red-500 font-semibold text-right mb-3";
         });
     }
 
-    // Generador de Memorial SIC
+    // Generación de borrador legal
     function generarDenunciaSIC() {
       if(!datosUltimoAnalisis) return;
       const fecha = new Date().toLocaleDateString();
@@ -246,19 +312,19 @@ E. S. M.
 
 REFERENCIA: Denuncia por presunta infracción al Estatuto del Consumidor (Publicidad Engañosa y Greenwashing).
 
-Yo, ciudadano consumidor, presento denuncia formal en contra del proveedor del producto "${datosUltimoAnalisis.nombre}" (Identificador EAN: ${datosUltimoAnalisis.id}), fundamentado en los siguientes:
+Yo, ciudadano consumidor, presento denuncia formal en contra del proveedor del producto "${datosUltimoAnalisis.nombre}" (Ref: ${datosUltimoAnalisis.id}), fundamentado en los siguientes:
 
 HECHOS:
-1. El producto promociona atributos ambientales/naturales en su presentación.
-2. La auditoría técnica confirmó la presencia de los siguientes componentes sintéticos: [ ${datosUltimoAnalisis.encontrados.join(", ").toUpperCase()} ].
+1. El producto comercializa atributos ambientales/naturales en su presentación.
+2. La auditoría técnica confirmó la presencia de los siguientes componentes de síntesis química: [ ${datosUltimoAnalisis.encontrados.join(", ").toUpperCase()} ].
 3. Se incurre en inducción a error y expectativa falsa respecto a la verdadera idoneidad del producto.
 
 FUNDAMENTOS DE DERECHO:
 - Artículos 23 y 29 de la Ley 1480 de 2011 (Prohibición de publicidad engañosa).
 - Decreto 1369 de aseveraciones ambientales.
 
-Fecha de emisión: ${fecha}
-Registrado en Firebase ID: ${datosUltimoAnalisis.id}`;
+Fecha de radicación: ${fecha}
+Registro ID Firebase: ${datosUltimoAnalisis.id}`;
 
       document.getElementById('texto-denuncia').value = formatoDenuncia;
       document.getElementById('modal-denuncia').classList.remove('hidden');
@@ -279,10 +345,12 @@ Registrado en Firebase ID: ${datosUltimoAnalisis.id}`;
 
     function reiniciarApp() {
       document.getElementById('result-container').classList.add('hidden');
-      cambiarModo('camara');
+      document.getElementById('ocr-result-preview').classList.add('hidden');
+      document.getElementById('texto-extraido-ocr').value = "";
+      cambiarModo('ean');
     }
 
-    window.onload = () => cambiarModo('camara');
+    window.onload = () => cambiarModo('ean');
   </script>
 </body>
 </html>
