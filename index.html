@@ -3,36 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VeriEco Auditoría - LegalTech</title>
+  <title>VeriEco Auditoría - LegalTech & OCR</title>
   
   <!-- Estilos Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Librería de Escáner de Barras -->
+  <!-- Escáner de Código de Barras -->
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <!-- Librería de Reconocimiento de Texto por Foto (OCR) -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
   
-  <!-- Firebase SDKs integrados con tu configuración -->
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyC_MyjSFLB-mHDWWaOfAlRetLDB_pAxgR0",
-        authDomain: "ango-592a4.firebaseapp.com",
-        databaseURL: "https://ango-592a4-default-rtdb.firebaseio.com",
-        projectId: "ango-592a4",
-        storageBucket: "ango-592a4.firebasestorage.app",
-        messagingSenderId: "234305709468",
-        appId: "1:234305709468:web:4a3009360c6033649dd459",
-        measurementId: "G-4YVSD60SP6"
-    };
-    firebase.initializeApp(firebaseConfig);
-    console.log("Firebase conectado correctamente a: ", firebaseConfig.projectId);
-  </script>
-
   <style>
     #reader video {
       object-fit: cover !important;
       border-radius: 0.75rem;
       width: 100% !important;
-      min-height: 220px;
+      min-height: 200px;
     }
   </style>
 </head>
@@ -40,7 +25,7 @@
 
   <header class="bg-slate-900 text-white py-5 px-4 shadow-md border-b border-emerald-500">
     <div class="max-w-md mx-auto text-center">
-      <span class="bg-emerald-500/20 text-emerald-400 text-xs font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider border border-emerald-500/30">GitHub & Firebase Project</span>
+      <span class="bg-emerald-500/20 text-emerald-400 text-xs font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider border border-emerald-500/30">LegalTech & OCR AI</span>
       <h1 class="text-2xl font-extrabold mt-2 tracking-tight">VeriEco Auditoría</h1>
       <p class="text-xs text-slate-400 mt-1">Detección de Greenwashing y Protección al Consumidor (Ley 1480)</p>
     </div>
@@ -48,21 +33,47 @@
 
   <main class="max-w-md mx-auto px-4 mt-6">
 
-    <!-- Tarjeta del Escáner -->
+    <!-- Tarjeta del Escáner y Carga de Foto -->
     <div id="scanner-card" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-      <h2 class="text-sm font-bold text-slate-700 mb-2">Escáner de Código de Barras (EAN-13)</h2>
       
-      <div id="reader" class="w-full bg-slate-900 rounded-lg overflow-hidden min-h-[220px]"></div>
-
-      <p class="text-xs text-slate-500 text-center mt-3">Apunta la cámara al código de barras del producto.</p>
-
-      <div class="mt-4 pt-3 border-t border-slate-100 flex gap-2">
-        <input type="text" id="manual-ean" placeholder="Ej. 7300400481588" class="flex-1 text-xs px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
-        <button onclick="buscarPorManual()" class="bg-slate-800 text-white text-xs px-4 py-2 rounded-lg font-medium hover:bg-slate-700">Buscar</button>
+      <!-- Modos de Análisis -->
+      <div class="flex gap-2 mb-4 border-b border-slate-100 pb-3">
+        <button id="btn-tab-barras" onclick="cambiarModo('barras')" class="flex-1 text-xs py-2 font-bold rounded-lg bg-emerald-600 text-white shadow-sm">
+          📷 Código de Barras
+        </button>
+        <button id="btn-tab-foto" onclick="cambiarModo('foto')" class="flex-1 text-xs py-2 font-bold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">
+          🖼️ Foto de Etiqueta (OCR)
+        </button>
       </div>
+
+      <!-- MODO 1: Lector de Cámara para Código de Barras -->
+      <div id="modo-barras">
+        <div id="reader" class="w-full bg-slate-900 rounded-lg overflow-hidden min-h-[200px]"></div>
+        <p class="text-xs text-slate-500 text-center mt-2">Apunta al código EAN-13 del empaque.</p>
+        
+        <div class="mt-3 pt-3 border-t border-slate-100 flex gap-2">
+          <input type="text" id="manual-ean" placeholder="Ingresa código manual (ej. 7300400481588)" class="flex-1 text-xs px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          <button onclick="buscarPorManual()" class="bg-slate-800 text-white text-xs px-3 py-2 rounded-lg font-medium">Buscar</button>
+        </div>
+      </div>
+
+      <!-- MODO 2: Carga de Foto de la Etiqueta (OCR) -->
+      <div id="modo-foto" class="hidden text-center py-4">
+        <div class="border-2 border-dashed border-emerald-300 bg-emerald-50/30 p-6 rounded-xl">
+          <svg class="w-10 h-10 text-emerald-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h0.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
+          <p class="text-xs font-bold text-slate-700">Tómale una foto a la etiqueta o ingredientes</p>
+          <p class="text-[10px] text-slate-500 mt-1 mb-3">La IA leerá el texto del empaque automáticamente sin depender de códigos.</p>
+          
+          <label class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-4 py-2.5 rounded-lg font-bold cursor-pointer inline-block shadow-sm">
+            <span>Subir o Tomar Foto</span>
+            <input type="file" id="image-input" accept="image/*" capture="environment" class="hidden" onchange="analizarFotoEtiqueta(event)">
+          </label>
+        </div>
+      </div>
+
     </div>
 
-    <!-- Pruebas Rápidas -->
+    <!-- Pruebas Rápidas de Demostración -->
     <div class="mt-4 bg-emerald-50/60 p-3 rounded-xl border border-emerald-100">
       <p class="text-xs font-semibold text-emerald-900 mb-2">⚡ Pruebas rápidas para demostración:</p>
       <div class="grid grid-cols-2 gap-2">
@@ -81,7 +92,7 @@
     <div id="result-card" class="hidden mt-6 bg-white p-5 rounded-xl shadow-md border border-slate-200">
       <div id="badge-container" class="mb-3"></div>
       <h3 id="res-product-name" class="text-lg font-bold text-slate-900 leading-snug">--</h3>
-      <p class="text-xs text-slate-500 mt-1"><strong>Marca:</strong> <span id="res-brand">--</span> | <strong>EAN:</strong> <span id="res-code">--</span></p>
+      <p class="text-xs text-slate-500 mt-1"><strong>Origen Datos:</strong> <span id="res-brand">--</span> | <strong>ID/EAN:</strong> <span id="res-code">--</span></p>
 
       <div class="my-4 border-t border-slate-100"></div>
 
@@ -109,7 +120,7 @@
         <pre id="denuncia-content" class="whitespace-pre-wrap"></pre>
       </div>
 
-      <button onclick="reiniciarApp()" class="w-full bg-slate-800 text-white text-xs py-2.5 rounded-lg font-semibold hover:bg-slate-700">Escanear Otro</button>
+      <button onclick="reiniciarApp()" class="w-full bg-slate-800 text-white text-xs py-2.5 rounded-lg font-semibold hover:bg-slate-700">Escanear Nuevo Producto</button>
     </div>
 
   </main>
@@ -121,11 +132,32 @@
       html5QrCode = new Html5Qrcode("reader");
       html5QrCode.start(
         { facingMode: "environment" }, 
-        { fps: 10, qrbox: { width: 220, height: 140 } }, 
+        { fps: 10, qrbox: { width: 220, height: 130 } }, 
         onScanSuccess
       ).catch(err => {
-        console.warn("Cámara no disponible, usa entrada manual o pruebas rápidas:", err);
+        console.warn("Cámara no iniciada:", err);
       });
+    }
+
+    function cambiarModo(modo) {
+      const bBarras = document.getElementById('btn-tab-barras');
+      const bFoto = document.getElementById('btn-tab-foto');
+      const mBarras = document.getElementById('modo-barras');
+      const mFoto = document.getElementById('modo-foto');
+
+      if (modo === 'barras') {
+        bBarras.className = "flex-1 text-xs py-2 font-bold rounded-lg bg-emerald-600 text-white shadow-sm";
+        bFoto.className = "flex-1 text-xs py-2 font-bold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200";
+        mBarras.classList.remove('hidden');
+        mFoto.classList.add('hidden');
+        inicializarEscaner();
+      } else {
+        bFoto.className = "flex-1 text-xs py-2 font-bold rounded-lg bg-emerald-600 text-white shadow-sm";
+        bBarras.className = "flex-1 text-xs py-2 font-bold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200";
+        mFoto.classList.remove('hidden');
+        mBarras.classList.add('hidden');
+        if (html5QrCode && html5QrCode.isScanning) html5QrCode.stop();
+      }
     }
 
     function onScanSuccess(decodedText) {
@@ -148,7 +180,7 @@
     }
 
     function consultarAPI(codigo) {
-      mostrarCargando();
+      mostrarCargando("Buscando producto en base pública...");
       fetch(`https://world.openfoodfacts.org/api/v2/product/${codigo}.json`)
         .then(res => res.json())
         .then(data => {
@@ -158,19 +190,48 @@
             const ing = p.ingredients_text ? p.ingredients_text.toLowerCase() : "";
             const claims = et.includes("natural") || et.includes("bio") || et.includes("eco");
             const quimicos = ing.includes("paraben") || ing.includes("sulfate") || ing.includes("petrolatum");
-            ejecutarDictamen(p.product_name || "Producto", p.brands || "Marca N/D", codigo, claims, quimicos, ing);
+            ejecutarDictamen(p.product_name || "Producto General", "API Open Food Facts", codigo, claims, quimicos, ing);
           } else {
-            ejecutarDictamen("Producto No Registrado", "Desconocida", codigo, false, false, "Sin datos de ingredientes.");
+            ejecutarDictamen("Producto No Registrado en Base Abierta", "Verificación Directa", codigo, false, false, "Usa la pestaña 'Foto de Etiqueta' para auditarlo directamente con la cámara.");
           }
         })
-        .catch(() => ejecutarDictamen("Error de Red", "N/A", codigo, false, false, "Comprueba tu conexión a internet."));
+        .catch(() => ejecutarDictamen("Error de Conexión", "Local", codigo, false, false, "Comprueba tu conexión a internet."));
+    }
+
+    // ANALIZAR ETIQUETA POR FOTO (OCR)
+    function analizarFotoEtiqueta(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      mostrarCargando("Leyendo texto de la etiqueta con OCR...");
+
+      Tesseract.recognize(
+        file,
+        'spa+eng',
+        { logger: m => console.log(m) }
+      ).then(({ data: { text } }) => {
+        const textoMin = text.toLowerCase();
+
+        // Extraer primera línea relevante como nombre tentativo
+        const lineas = text.split('\n').filter(l => l.trim().length > 3);
+        const nombreDetectado = lineas.length > 0 ? lineas[0].substring(0, 35) : "Producto Escaneado por Foto";
+
+        // Evaluación de palabras clave
+        const tieneClaims = textoMin.includes("bio") || textoMin.includes("eco") || textoMin.includes("natural") || textoMin.includes("organico") || textoMin.includes("verde");
+        const tieneSinteticos = textoMin.includes("sulfat") || textoMin.includes("paraben") || textoMin.includes("petrolat") || textoMin.includes("palma") || textoMin.includes("sulfato");
+
+        ejecutarDictamen(nombreDetectado, "Lectura OCR por Foto", "FOTO-OCR", tieneClaims, tieneSinteticos, text);
+      }).catch(err => {
+        console.error("Error OCR:", err);
+        ejecutarDictamen("Error al Procesar Foto", "OCR", "ERR", false, false, "No se pudo extraer el texto de la imagen clara.");
+      });
     }
 
     function simularAudit(codigo, nombre, marca, claims, quimicos) {
       if(html5QrCode && html5QrCode.isScanning) html5QrCode.stop();
-      mostrarCargando();
+      mostrarCargando("Ejecutando auditoría de prueba...");
       setTimeout(() => {
-        ejecutarDictamen(nombre, marca, codigo, claims, quimicos, "ingredientes sintéticos de prueba detectados");
+        ejecutarDictamen(nombre, marca, codigo, claims, quimicos, "Componentes de síntesis química detectados en análisis de etiqueta.");
       }, 400);
     }
 
@@ -186,17 +247,17 @@
 
       if (claims && quimicos) {
         badge = `<span class="bg-red-100 text-red-800 border border-red-300 text-[11px] font-extrabold px-3 py-1 rounded-full inline-block">🚨 RIESGO ALTO: GREENWASHING</span>`;
-        analisis = `El producto exhibe alegaciones ecológicas ("Bio/Eco/Natural"), pero contiene componentes sintéticos (${ing.substring(0, 50)}...). Inconsistencia publicitaria directa.`;
-        legal = `<strong>Ley 1480 (Art. 29 - Publicidad Engañosa):</strong> Prohíbe inducir a error al consumidor.<br><strong>Decreto 1369:</strong> Exige soporte probatorio estricto para afirmaciones ambientales.`;
+        analisis = `Se detectaron palabras de sostenibilidad o naturalidad ("Bio/Eco/Natural"), pero el texto de componentes registra sustancias de síntesis química o impacto ambiental sin mitigar (${ing.substring(0, 60)}...). Inconsistencia publicitaria directa.`;
+        legal = `<strong>Ley 1480 (Art. 29 - Publicidad Engañosa):</strong> Prohíbe inducir a error al consumidor.<br><strong>Decreto 1369:</strong> Exige soporte probatorio previo sobre cualquier aseveración ambiental en empaques.`;
         verDenuncia = true;
       } else if (claims) {
         badge = `<span class="bg-amber-100 text-amber-800 border border-amber-300 text-[11px] font-bold px-3 py-1 rounded-full inline-block">⚠️ ALERTA: FALTA DE SOPORTE</span>`;
-        analisis = `Usa términos ambientales pero carece de registros de certificación independiente auditada.`;
-        legal = `<strong>Ley 1480 (Art. 23 - Derecho a la Información):</strong> La información comercial debe ser transparente y comprobable.`;
+        analisis = `Presenta términos ecológicos en la etiqueta pero no registra sellos de certificación de tercera parte independiente.`;
+        legal = `<strong>Ley 1480 (Art. 23 - Derecho a la Información):</strong> Toda información debe ser completa, veraz e idónea.`;
       } else {
         badge = `<span class="bg-emerald-100 text-emerald-800 border border-emerald-300 text-[11px] font-bold px-3 py-1 rounded-full inline-block">✅ CONFORME</span>`;
-        analisis = `No se detectan discrepancias graves entre el etiquetado promocional y sus componentes.`;
-        legal = `Cumplimiento general de las normas de idoneidad e información veraz.`;
+        analisis = `No se detectaron discrepancias entre la promesa comercial publicitaria y los ingredientes del producto.`;
+        legal = `Cumplimiento general de las normas de idoneidad e información al consumidor.`;
       }
 
       document.getElementById('badge-container').innerHTML = badge;
@@ -214,20 +275,21 @@
       const nombre = document.getElementById('res-product-name').innerText;
       const marca = document.getElementById('res-brand').innerText;
       const codigo = document.getElementById('res-code').innerText;
-      const texto = `SUPERINTENDENCIA DE INDUSTRIA Y COMERCIO (SIC)\nAsunto: Denuncia por Publicidad Engañosa (Greenwashing)\nProducto: ${nombre} (${marca}) - EAN: ${codigo}\n\nSe solicita investigación por posible infracción al Art. 29 de la Ley 1480 de 2011 y Decreto 1369 por incongruencia en alegaciones ambientales.`;
+      const texto = `SUPERINTENDENCIA DE INDUSTRIA Y COMERCIO (SIC)\nDelegatura para la Protección del Consumidor\n\nASUNTO: Denuncia por presunta Publicidad Engañosa (Greenwashing)\nPRODUCTO: ${nombre}\nORIGEN / EAN: ${marca} (${codigo})\n\nHECHOS:\n1. El producto promociona atributos de sosteniblidad ("Bio/Eco/Natural").\n2. Se verificó que su composición contiene químicos sintéticos en desacuerdo con la oferta publicitaria.\n\nFUNDAMENTO: Art. 29 Ley 1480 de 2011 y Decreto 1369 de 2014.`;
+      
       document.getElementById('denuncia-content').innerText = texto;
       document.getElementById('denuncia-text-container').classList.remove('hidden');
     }
 
     function copiarDenuncia() {
       navigator.clipboard.writeText(document.getElementById('denuncia-content').innerText);
-      alert("¡Denuncia copiada!");
+      alert("¡Denuncia copiada al portapapeles!");
     }
 
-    function mostrarCargando() {
+    function mostrarCargando(mensaje) {
       document.getElementById('scanner-card').classList.add('hidden');
       document.getElementById('result-card').classList.remove('hidden');
-      document.getElementById('res-product-name').innerText = "Analizando base de datos...";
+      document.getElementById('res-product-name').innerText = mensaje;
       document.getElementById('badge-container').innerHTML = `<span class="bg-slate-200 text-slate-700 text-xs px-3 py-1 rounded-full font-bold animate-pulse">PROCESANDO...</span>`;
     }
 
@@ -235,10 +297,10 @@
       document.getElementById('result-card').classList.add('hidden');
       document.getElementById('denuncia-text-container').classList.add('hidden');
       document.getElementById('scanner-card').classList.remove('hidden');
-      inicializarEscaner();
+      cambiarModo('barras');
     }
 
-    window.onload = inicializarEscaner;
+    window.onload = () => cambiarModo('barras');
   </script>
 </body>
 </html>
