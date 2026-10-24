@@ -70,7 +70,7 @@
         <video id="ocr-video" autoplay playsinline muted class="w-full h-full object-cover min-h-[220px]"></video>
         <canvas id="ocr-canvas" class="hidden"></canvas>
         <div class="absolute inset-0 border-2 border-rose-500/40 rounded-xl pointer-events-none flex items-center justify-center">
-          <div class="bg-slate-950/70 px-3 py-1 rounded-lg border border-rose-500/30 text-[10px] text-rose-300 font-bold uppercase tracking-wider">Apunta los ingredientes aquí</div>
+          <div class="bg-slate-950/70 px-3 py-1 rounded-lg border border-rose-500/30 text-[10px] text-rose-300 font-bold uppercase tracking-wider">Apunta bien de cerca a los ingredientes</div>
         </div>
       </div>
 
@@ -89,8 +89,8 @@
       <div class="my-4 border-t border-slate-800"></div>
 
       <div class="mb-4">
-        <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Análisis de Componentes:</h4>
-        <p id="res-analysis" class="text-xs text-slate-300 leading-relaxed bg-slate-950 p-3 rounded-xl border border-slate-800/80">--</p>
+        <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Texto Extraído / Análisis:</h4>
+        <p id="res-analysis" class="text-xs text-slate-300 leading-relaxed bg-slate-950 p-3 rounded-xl border border-slate-800/80 max-h-40 overflow-y-auto">--</p>
       </div>
 
       <div id="terms-box" class="hidden mb-4 p-3 bg-rose-950/30 rounded-xl border border-rose-900/40">
@@ -172,12 +172,11 @@
       }
     }
 
-    // Iniciar el stream de video en vivo para OCR
     async function iniciarCamaraOCR() {
       try {
         const video = document.getElementById('ocr-video');
         ocrStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" }
+          video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } }
         });
         video.srcObject = ocrStream;
       } catch (err) {
@@ -192,7 +191,7 @@
       }
     }
 
-    // Capturar fotograma de la cámara en vivo y pasarlo a Tesseract
+    // Capturar, mejorar contraste en escala de grises y evaluar OCR
     function capturarYEvaluarOCR() {
       const video = document.getElementById('ocr-video');
       const canvas = document.getElementById('ocr-canvas');
@@ -202,13 +201,28 @@
         return;
       }
 
-      canvas.width = video.videoWidth || 640;
-      canvas.height = video.videoHeight || 480;
+      canvas.width = video.videoWidth || 1280;
+      canvas.height = video.videoHeight || 720;
       const ctx = canvas.getContext('2d');
+      
+      // Dibujar imagen del video
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
+      // Preprocesamiento de imagen: aumentar contraste y pasar a escala de grises para que Tesseract lea perfecto
+      let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      let data = imgData.data;
+      for (let i = 0; i < data.length; i += 4) {
+        let avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+        // Umbral de contraste fuerte (Blanco y Negro puro para letras pequeñas)
+        let v = avg < 120 ? 0 : 255; 
+        data[i]     = v; // R
+        data[i + 1] = v; // G
+        data[i + 2] = v; // B
+      }
+      ctx.putImageData(imgData, 0, 0);
+
       detenerCamaraOCR();
-      mostrarCargando("Leyendo ingredientes en tiempo real...");
+      mostrarCargando("Optimizando y leyendo texto...");
 
       canvas.toBlob(blob => {
         Tesseract.recognize(
@@ -218,7 +232,7 @@
             logger: m => {
               if(m.status === 'recognizing text') {
                 let porc = Math.round(m.progress * 100);
-                document.getElementById('res-product-name').innerText = `Procesando OCR... (${porc}%)`;
+                document.getElementById('res-product-name').innerText = `Analizando OCR... (${porc}%)`;
               }
             } 
           }
@@ -242,12 +256,14 @@
             }
           }
 
+          // Mostrar todo lo que leyó el OCR para que puedas verificar si leyó bien las letras
+          document.getElementById('res-analysis').innerText = text.trim() ? `Texto detectado:\n\n"${text.trim()}"` : "El motor OCR no logró capturar texto claro. Intenta acercar más la cámara con buena iluminación.";
+
           if (encontrado) {
             document.getElementById('badge-container').innerHTML = `
               <div class="bg-rose-500/10 border border-rose-500/30 p-3 rounded-xl text-center animate-pulse">
                 <span class="text-rose-500 font-extrabold text-sm block">🚨 ¡ALERTA ROJA: GLICERINA DETECTADA!</span>
               </div>`;
-            document.getElementById('res-analysis').innerText = `El texto capturado contiene componentes de glicerina. Texto leído: "${text.substring(0, 100)}..."`;
             document.getElementById('terms-box').classList.remove('hidden');
             document.getElementById('res-terms-found').innerText = `Término hallado: "${coincidencia}"`;
           } else {
@@ -255,14 +271,13 @@
               <div class="bg-emerald-500/10 border border-emerald-500/30 p-3 rounded-xl text-center">
                 <span class="text-emerald-400 font-bold text-sm block">✅ 100% LIBRE DE GLICERINA</span>
               </div>`;
-            document.getElementById('res-analysis').innerText = `No se detectaron términos asociados a glicerina en el texto capturado.`;
             document.getElementById('terms-box').classList.add('hidden');
           }
         }).catch(err => {
           alert("Error en el motor OCR: " + err);
           reiniciarApp();
         });
-      }, 'image/jpeg', 0.9);
+      }, 'image/jpeg', 0.95);
     }
 
     async function consultarAPIGlobal(codigo) {
@@ -354,7 +369,7 @@
       document.getElementById('badge-container').innerHTML = `
         <div class="bg-amber-500/10 border border-amber-500/30 p-4 rounded-xl text-center">
           <span class="text-amber-400 font-bold text-sm block">⚠️ ARTÍCULO NO INDEXADO</span>
-          <p class="text-xs text-slate-300 mt-2">Cambia arriba al modo <strong>"OCR Cámara"</strong> para apuntar y leer la etiqueta de ingredientes directamente con la cámara en tiempo real.</p>
+          <p class="text-xs text-slate-300 mt-2">Usa el modo <strong>"OCR Cámara"</strong> para enfocar de cerca la lista de ingredientes.</p>
         </div>`;
       document.getElementById('res-analysis').innerText = "Usa la cámara en vivo para escanear el texto de los ingredientes al instante.";
       document.getElementById('terms-box').classList.add('hidden');
