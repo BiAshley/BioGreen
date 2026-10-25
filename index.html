@@ -85,7 +85,18 @@
                     <i class="fa-solid fa-leaf text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="font-bold text-lg leading-tight tracking-wide text-white">BioGreen</h1>
+                    <div class="flex items-center gap-2">
+                        <h1 class="font-bold text-lg leading-tight tracking-wide text-white">BioGreen</h1>
+                        <!-- Botones minimalistas de instalación PWA -->
+                        <div class="flex items-center gap-1.5 pl-1 border-l border-slate-700">
+                            <button onclick="alert('Para instalar en Android: Abre el menú de tu navegador (3 puntos) y selecciona Instalar Aplicación.')" class="text-slate-400 hover:text-emerald-400 transition p-1 text-xs" title="Instalar en Android (Google Play)">
+                                <i class="fa-brands fa-google-play"></i>
+                            </button>
+                            <button onclick="alert('Para instalar en iPhone: Toca el botón Compartir en Safari y selecciona Agregar a inicio.')" class="text-slate-400 hover:text-white transition p-1 text-xs" title="Instalar en iPhone (iOS)">
+                                <i class="fa-brands fa-apple"></i>
+                            </button>
+                        </div>
+                    </div>
                     <p class="text-xs text-emerald-400 font-medium">Detector de Greenwashing & Química Verde</p>
                 </div>
             </div>
