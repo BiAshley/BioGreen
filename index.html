@@ -1,399 +1,722 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="h-full bg-slate-900 text-slate-100">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VeriGlicerina - Detector Global en Tiempo Real (E422)</title>
-  
-  <!-- Estilos Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Librería de Escáner de Barras -->
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-  <!-- Librería OCR Tesseract.js -->
-  <script src="https://unpkg.com/tesseract.js@v4.0.2/dist/tesseract.min.js"></script>
-  
-  <style>
-    #reader video, #ocr-video {
-      object-fit: cover !important;
-      border-radius: 0.75rem;
-      width: 100% !important;
-      min-height: 220px;
-    }
-  </style>
-</head>
-<body class="bg-slate-950 text-slate-100 font-sans min-h-screen pb-12">
-
-  <header class="bg-slate-900 border-b border-rose-600/30 py-4 px-4 shadow-lg sticky top-0 z-50">
-    <div class="max-w-md mx-auto flex items-center justify-between">
-      <div class="flex items-center gap-2">
-        <div class="bg-rose-600/20 p-2 rounded-lg border border-rose-500/30">
-          <svg class="w-6 h-6 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
-        </div>
-        <div>
-          <h1 class="text-base font-extrabold tracking-tight">VeriGlicerina <span class="text-rose-500 text-xs px-1.5 py-0.5 rounded bg-rose-500/10 border border-rose-500/20">LIVE</span></h1>
-          <p class="text-[10px] text-slate-400">Detector Global de Glicerina (E422)</p>
-        </div>
-      </div>
-      <!-- Selector de Modo -->
-      <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800">
-        <button onclick="cambiarModo('barcode')" id="btn-mode-bc" class="text-xs px-3 py-1.5 rounded-lg font-bold bg-rose-600 text-white transition">Barras</button>
-        <button onclick="cambiarModo('ocr')" id="btn-mode-ocr" class="text-xs px-3 py-1.5 rounded-lg font-bold text-slate-400 hover:text-white transition">OCR Cámara</button>
-      </div>
-    </div>
-  </header>
-
-  <main class="max-w-md mx-auto px-4 mt-5">
-
-    <!-- Tarjeta del Escáner de Código de Barras -->
-    <div id="scanner-card" class="bg-slate-900 p-4 rounded-2xl shadow-xl border border-slate-800">
-      <div class="flex justify-between items-center mb-2">
-        <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Escáner de Código de Barras</h2>
-        <span class="text-[10px] text-slate-500">Universal</span>
-      </div>
-      
-      <div id="reader" class="w-full bg-black rounded-xl overflow-hidden min-h-[220px] border border-slate-800"></div>
-
-      <div class="mt-3 flex gap-2">
-        <input type="text" id="manual-ean" placeholder="Ej. 8682241215607" class="flex-1 text-xs px-3 py-2 bg-slate-950 border border-slate-800 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500">
-        <button onclick="buscarPorManual()" class="bg-rose-600 text-white text-xs px-4 py-2 rounded-xl font-bold hover:bg-rose-500 transition">Buscar</button>
-      </div>
-    </div>
-
-    <!-- Tarjeta del Escáner OCR en Vivo por Cámara -->
-    <div id="ocr-card" class="hidden bg-slate-900 p-4 rounded-2xl shadow-xl border border-slate-800">
-      <div class="flex justify-between items-center mb-2">
-        <h2 class="text-xs font-bold text-rose-400 uppercase tracking-wider">Cámara OCR - Ingredientes en Vivo</h2>
-        <span class="text-[10px] text-slate-500">Multi-Idioma</span>
-      </div>
-
-      <div class="relative w-full bg-black rounded-xl overflow-hidden min-h-[220px] border border-slate-800">
-        <video id="ocr-video" autoplay playsinline muted class="w-full h-full object-cover min-h-[220px]"></video>
-        <canvas id="ocr-canvas" class="hidden"></canvas>
-        <div class="absolute inset-0 border-2 border-rose-500/40 rounded-xl pointer-events-none flex items-center justify-center">
-          <div class="bg-slate-950/70 px-3 py-1 rounded-lg border border-rose-500/30 text-[10px] text-rose-300 font-bold uppercase tracking-wider">Apunta bien de cerca a los ingredientes</div>
-        </div>
-      </div>
-
-      <button onclick="capturarYEvaluarOCR()" class="mt-3 w-full bg-rose-600 hover:bg-rose-500 text-white text-xs py-3 rounded-xl font-bold shadow-lg transition flex items-center justify-center gap-2">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-        <span>Escanear Texto de la Etiqueta Ahora</span>
-      </button>
-    </div>
-
-    <!-- Resultados -->
-    <div id="result-card" class="hidden bg-slate-900 p-5 rounded-2xl shadow-xl border border-slate-800">
-      <div id="badge-container" class="mb-3"></div>
-      <h3 id="res-product-name" class="text-base font-extrabold text-white leading-snug">--</h3>
-      <p class="text-[11px] text-slate-400 mt-1"><strong>Fuente:</strong> <span id="res-brand" class="text-slate-200">--</span> | <span id="res-code" class="text-slate-200">--</span></p>
-
-      <div class="my-4 border-t border-slate-800"></div>
-
-      <div class="mb-4">
-        <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Texto Extraído / Análisis:</h4>
-        <p id="res-analysis" class="text-xs text-slate-300 leading-relaxed bg-slate-950 p-3 rounded-xl border border-slate-800/80 max-h-40 overflow-y-auto">--</p>
-      </div>
-
-      <div id="terms-box" class="hidden mb-4 p-3 bg-rose-950/30 rounded-xl border border-rose-900/40">
-        <h4 class="text-[10px] font-bold text-rose-400 uppercase tracking-wider mb-1">Término detectado:</h4>
-        <p id="res-terms-found" class="text-xs font-mono text-rose-200 font-bold">--</p>
-      </div>
-
-      <button onclick="reiniciarApp()" class="w-full bg-slate-800 hover:bg-slate-700 text-white text-xs py-3 rounded-xl font-bold transition">Nuevo Escaneo</button>
-    </div>
-
-  </main>
-
-  <script>
-    let html5QrCode;
-    let ocrStream = null;
-
-    const terminosGlicerina = [
-      "glicerina", "glicerol", "e-422", "e422",
-      "glycerin", "glycerine", "glycerol",
-      "glycérine", "glycérol",
-      "glyzerin",
-      "gliceryna", "глицерин",
-      "glicerina", "glicerolo",
-      "1,2,3-propanetriol", "propan-1,2,3-triol", "trihydroxypropane"
-    ];
-
-    function cambiarModo(modo) {
-      const bcCard = document.getElementById('scanner-card');
-      const ocrCard = document.getElementById('ocr-card');
-      const btnBc = document.getElementById('btn-mode-bc');
-      const btnOcr = document.getElementById('btn-mode-ocr');
-
-      if (modo === 'barcode') {
-        bcCard.classList.remove('hidden');
-        ocrCard.classList.add('hidden');
-        btnBc.className = "text-xs px-3 py-1.5 rounded-lg font-bold bg-rose-600 text-white transition";
-        btnOcr.className = "text-xs px-3 py-1.5 rounded-lg font-bold text-slate-400 hover:text-white transition";
-        detenerCamaraOCR();
-        inicializarEscaner();
-      } else {
-        bcCard.classList.add('hidden');
-        ocrCard.classList.remove('hidden');
-        btnOcr.className = "text-xs px-3 py-1.5 rounded-lg font-bold bg-rose-600 text-white transition";
-        btnBc.className = "text-xs px-3 py-1.5 rounded-lg font-bold text-slate-400 hover:text-white transition";
-        if (html5QrCode && html5QrCode.isScanning) {
-          html5QrCode.stop().catch(() => {});
-        }
-        iniciarCamaraOCR();
-      }
-    }
-
-    function inicializarEscaner() {
-      if (!html5QrCode) {
-        html5QrCode = new Html5Qrcode("reader");
-      }
-      html5QrCode.start(
-        { facingMode: "environment" }, 
-        { fps: 10, qrbox: { width: 220, height: 140 } }, 
-        onScanSuccess
-      ).catch(err => console.warn("Cámara de barras ocupada:", err));
-    }
-
-    function onScanSuccess(decodedText) {
-      if(html5QrCode && html5QrCode.isScanning) {
-        html5QrCode.stop().then(() => consultarAPIGlobal(decodedText));
-      } else {
-        consultarAPIGlobal(decodedText);
-      }
-    }
-
-    function buscarPorManual() {
-      const ean = document.getElementById('manual-ean').value.trim();
-      if(ean) {
-        if(html5QrCode && html5QrCode.isScanning) {
-          html5QrCode.stop().then(() => consultarAPIGlobal(ean));
-        } else {
-          consultarAPIGlobal(ean);
-        }
-      }
-    }
-
-    async function iniciarCamaraOCR() {
-      try {
-        const video = document.getElementById('ocr-video');
-        ocrStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } }
-        });
-        video.srcObject = ocrStream;
-      } catch (err) {
-        alert("No se pudo acceder a la cámara para OCR: " + err);
-      }
-    }
-
-    function detenerCamaraOCR() {
-      if (ocrStream) {
-        ocrStream.getTracks().forEach(track => track.stop());
-        ocrStream = null;
-      }
-    }
-
-    // Capturar, mejorar contraste en escala de grises y evaluar OCR
-    function capturarYEvaluarOCR() {
-      const video = document.getElementById('ocr-video');
-      const canvas = document.getElementById('ocr-canvas');
-      
-      if (!video.srcObject) {
-        alert("La cámara OCR no está activa.");
-        return;
-      }
-
-      canvas.width = video.videoWidth || 1280;
-      canvas.height = video.videoHeight || 720;
-      const ctx = canvas.getContext('2d');
-      
-      // Dibujar imagen del video
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      // Preprocesamiento de imagen: aumentar contraste y pasar a escala de grises para que Tesseract lea perfecto
-      let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      let data = imgData.data;
-      for (let i = 0; i < data.length; i += 4) {
-        let avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-        // Umbral de contraste fuerte (Blanco y Negro puro para letras pequeñas)
-        let v = avg < 120 ? 0 : 255; 
-        data[i]     = v; // R
-        data[i + 1] = v; // G
-        data[i + 2] = v; // B
-      }
-      ctx.putImageData(imgData, 0, 0);
-
-      detenerCamaraOCR();
-      mostrarCargando("Optimizando y leyendo texto...");
-
-      canvas.toBlob(blob => {
-        Tesseract.recognize(
-          blob,
-          'eng+spa+fra+deu+por+rus',
-          { 
-            logger: m => {
-              if(m.status === 'recognizing text') {
-                let porc = Math.round(m.progress * 100);
-                document.getElementById('res-product-name').innerText = `Analizando OCR... (${porc}%)`;
-              }
-            } 
-          }
-        ).then(({ data: { text } }) => {
-          document.getElementById('ocr-card').classList.add('hidden');
-          document.getElementById('result-card').classList.remove('hidden');
-
-          document.getElementById('res-product-name').innerText = "Análisis por Cámara en Vivo (OCR)";
-          document.getElementById('res-brand').innerText = "Captura Directa de Etiqueta";
-          document.getElementById('res-code').innerText = "N/A";
-
-          const textoLimpio = text.toLowerCase();
-          let encontrado = false;
-          let coincidencia = "";
-
-          for (let termino of terminosGlicerina) {
-            if (textoLimpio.includes(termino)) {
-              encontrado = true;
-              coincidencia = termino;
-              break;
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoScan - Química Verde & Detector de Greenwashing</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            900: '#14532d',
+                        }
+                    }
+                }
             }
-          }
+        }
+    </script>
+    <style>
+        /* Custom animations & scrollbars */
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .scan-pulse {
+            animation: scanLine 2s infinite ease-in-out;
+        }
+        @keyframes scanLine {
+            0% { top: 0%; opacity: 0.8; }
+            50% { opacity: 1; }
+            100% { top: 95%; opacity: 0.8; }
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(51, 65, 85, 0.8);
+            border-radius: 9999px;
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col font-sans antialiased text-slate-100 bg-slate-950">
 
-          // Mostrar todo lo que leyó el OCR para que puedas verificar si leyó bien las letras
-          document.getElementById('res-analysis').innerText = text.trim() ? `Texto detectado:\n\n"${text.trim()}"` : "El motor OCR no logró capturar texto claro. Intenta acercar más la cámara con buena iluminación.";
+    <!-- Top Bar Navigation -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-950 font-bold shadow-lg shadow-emerald-500/20">
+                    <i class="fa-solid fa-leaf text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight tracking-wide text-white">EcoScan IA</h1>
+                    <p class="text-xs text-emerald-400 font-medium">Detector de Greenwashing & Química Verde</p>
+                </div>
+            </div>
+            
+            <button id="openKeyModal" class="flex items-center gap-2 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-3 py-1.5 rounded-lg border border-slate-700 transition">
+                <i class="fa-solid fa-key text-amber-400"></i>
+                <span id="keyStatusText">API Key activa</span>
+            </button>
+        </div>
+    </header>
 
-          if (encontrado) {
-            document.getElementById('badge-container').innerHTML = `
-              <div class="bg-rose-500/10 border border-rose-500/30 p-3 rounded-xl text-center animate-pulse">
-                <span class="text-rose-500 font-extrabold text-sm block">🚨 ¡ALERTA ROJA: GLICERINA DETECTADA!</span>
-              </div>`;
-            document.getElementById('terms-box').classList.remove('hidden');
-            document.getElementById('res-terms-found').innerText = `Término hallado: "${coincidencia}"`;
-          } else {
-            document.getElementById('badge-container').innerHTML = `
-              <div class="bg-emerald-500/10 border border-emerald-500/30 p-3 rounded-xl text-center">
-                <span class="text-emerald-400 font-bold text-sm block">✅ 100% LIBRE DE GLICERINA</span>
-              </div>`;
-            document.getElementById('terms-box').classList.add('hidden');
-          }
-        }).catch(err => {
-          alert("Error en el motor OCR: " + err);
-          reiniciarApp();
+    <!-- Main Container -->
+    <main class="flex-1 max-w-5xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Left Column: Camera / Upload Section (5 cols) -->
+        <section class="lg:col-span-5 flex flex-col gap-4">
+            
+            <!-- Camera & Canvas Card -->
+            <div class="glass-card rounded-2xl p-4 flex flex-col items-center relative overflow-hidden shadow-xl">
+                
+                <!-- Video / Image Preview Area -->
+                <div id="previewContainer" class="relative w-full aspect-[4/3] bg-slate-900 rounded-xl overflow-hidden border border-slate-800 flex items-center justify-center group">
+                    
+                    <!-- Placeholder initial state -->
+                    <div id="uploadPlaceholder" class="flex flex-col items-center justify-center p-6 text-center text-slate-400">
+                        <i class="fa-solid fa-camera-retro text-4xl mb-3 text-slate-500"></i>
+                        <p class="text-sm font-medium text-slate-300">Apunta la cámara o sube una imagen del producto</p>
+                        <p class="text-xs text-slate-500 mt-1">Detecta plásticos, etiquetas, empaques y materiales</p>
+                    </div>
+
+                    <!-- Live Video Feed -->
+                    <video id="webcamVideo" autoplay playsinline class="hidden w-full h-full object-cover"></video>
+
+                    <!-- Captured / Selected Image Preview -->
+                    <img id="imagePreview" class="hidden w-full h-full object-contain bg-black/40" alt="Vista previa del producto">
+
+                    <!-- Scan Line Overlay Animation -->
+                    <div id="scanLine" class="hidden absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_15px_#34d399] scan-pulse z-10"></div>
+
+                    <!-- Hidden Canvas for frame capturing -->
+                    <canvas id="captureCanvas" class="hidden"></canvas>
+                </div>
+
+                <!-- Controls Bar -->
+                <div class="w-full mt-4 grid grid-cols-2 gap-2">
+                    <button id="toggleCameraBtn" class="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium py-2.5 px-4 rounded-xl border border-slate-700 transition">
+                        <i class="fa-solid fa-video"></i>
+                        <span id="cameraBtnText">Iniciar Cámara</span>
+                    </button>
+
+                    <label class="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium py-2.5 px-4 rounded-xl border border-slate-700 cursor-pointer transition">
+                        <i class="fa-solid fa-upload"></i>
+                        <span>Subir Imagen</span>
+                        <input type="file" id="fileInput" accept="image/*" class="hidden">
+                    </label>
+                </div>
+
+                <!-- Primary Action: Analyze Button -->
+                <button id="analyzeBtn" disabled class="w-full mt-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:from-slate-800 disabled:to-slate-800 disabled:text-slate-600 text-white font-semibold py-3 px-4 rounded-xl shadow-lg transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-microscope text-lg"></i>
+                    <span>Analizar Material & Greenwashing</span>
+                </button>
+            </div>
+
+            <!-- Quick Guide / Info Box -->
+            <div class="glass-card rounded-2xl p-4 border border-slate-800 text-xs text-slate-400 space-y-2">
+                <div class="flex items-center gap-2 text-slate-200 font-semibold text-sm">
+                    <i class="fa-solid fa-lightbulb text-amber-400"></i>
+                    <span>¿Cómo funciona?</span>
+                </div>
+                <p>1. Fotografía el producto, el símbolo de reciclaje (PET, PP, HDPE) o las etiquetas del empaque.</p>
+                <p>2. La Inteligencia Artificial analizará la composición química y los materiales físicos.</p>
+                <p>3. Evalúa si la publicidad ecológica del producto es real o cae en **Greenwashing** frente a los 12 Principios de la Química Verde.</p>
+            </div>
+
+        </section>
+
+        <!-- Right Column: Results & Analysis (7 cols) -->
+        <section class="lg:col-span-7 flex flex-col gap-4">
+
+            <!-- Initial Idle State -->
+            <div id="idleState" class="glass-card rounded-2xl p-8 text-center flex flex-col items-center justify-center min-h-[400px]">
+                <div class="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mb-4 text-emerald-400 text-2xl border border-slate-700">
+                    <i class="fa-solid fa-barcode"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-slate-200">Esperando captura</h3>
+                <p class="text-sm text-slate-400 max-w-md mt-2">
+                    Captura una imagen del producto o empaque para analizar su nivel de sostenibilidad, riesgos de greenwashing y materiales.
+                </p>
+            </div>
+
+            <!-- Loading Spinner State -->
+            <div id="loadingState" class="hidden glass-card rounded-2xl p-8 text-center flex flex-col items-center justify-center min-h-[400px]">
+                <div class="relative w-16 h-16 mb-4">
+                    <div class="absolute inset-0 rounded-full border-4 border-emerald-500/20"></div>
+                    <div class="absolute inset-0 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin"></div>
+                    <i class="fa-solid fa-flask absolute inset-0 flex items-center justify-center text-emerald-400 text-xl"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-slate-200">Analizando producto con Nemotron VL...</h3>
+                <p class="text-sm text-slate-400 max-w-sm mt-2">
+                    Identificando composición de materiales, reciclabilidad y auditando afirmaciones ecológicas...
+                </p>
+            </div>
+
+            <!-- Analysis Results Panel -->
+            <div id="resultState" class="hidden space-y-4">
+
+                <!-- Header / Verdict Banner -->
+                <div id="verdictBanner" class="p-5 rounded-2xl border flex items-start justify-between gap-4 glass-card">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span id="verdictBadge" class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider">
+                                --
+                            </span>
+                            <span id="materialTypeBadge" class="bg-slate-800 text-slate-300 px-2.5 py-0.5 rounded-full text-xs font-medium border border-slate-700">
+                                Material
+                            </span>
+                        </div>
+                        <h2 id="productTitle" class="text-xl font-bold text-white">Nombre del Producto</h2>
+                        <p id="verdictSummary" class="text-sm text-slate-300 leading-relaxed"></p>
+                    </div>
+                </div>
+
+                <!-- Tabs Navigation -->
+                <div class="flex border-b border-slate-800 gap-4">
+                    <button id="tabMaterialBtn" class="pb-2 text-sm font-semibold text-emerald-400 border-b-2 border-emerald-400 transition">
+                        <i class="fa-solid fa-cube mr-1"></i> Material & Composición
+                    </button>
+                    <button id="tabGreenwashingBtn" class="pb-2 text-sm font-semibold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition">
+                        <i class="fa-solid fa-triangle-exclamation mr-1"></i> Auditoría Greenwashing
+                    </button>
+                    <button id="tabPrinciplesBtn" class="pb-2 text-sm font-semibold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition">
+                        <i class="fa-solid fa-vial mr-1"></i> 12 Principios
+                    </button>
+                </div>
+
+                <!-- Tab 1: Material & Composition Details -->
+                <div id="tabMaterialContent" class="space-y-4">
+                    <div class="glass-card rounded-2xl p-5 space-y-4">
+                        <h3 class="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-atom text-emerald-400"></i> Identificación del Material
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div class="bg-slate-900/60 p-3.5 rounded-xl border border-slate-800/80">
+                                <span class="text-xs text-slate-400 block mb-1">Material Predominante</span>
+                                <span id="matName" class="font-bold text-slate-100 text-base">--</span>
+                            </div>
+                            <div class="bg-slate-900/60 p-3.5 rounded-xl border border-slate-800/80">
+                                <span class="text-xs text-slate-400 block mb-1">Biodegradabilidad / Origen</span>
+                                <span id="matOrigin" class="font-medium text-slate-200">--</span>
+                            </div>
+                            <div class="bg-slate-900/60 p-3.5 rounded-xl border border-slate-800/80">
+                                <span class="text-xs text-slate-400 block mb-1">Nivel de Reciclabilidad</span>
+                                <span id="matRecyclability" class="font-medium text-slate-200">--</span>
+                            </div>
+                            <div class="bg-slate-900/60 p-3.5 rounded-xl border border-slate-800/80">
+                                <span class="text-xs text-slate-400 block mb-1">Impacto de Fin de Vida</span>
+                                <span id="matEol" class="font-medium text-slate-200">--</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+                            <h4 class="text-xs text-slate-400 font-medium mb-1">Detalle Químico y Ambiental:</h4>
+                            <p id="matDescription" class="text-sm text-slate-300 leading-relaxed"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Greenwashing Audit -->
+                <div id="tabGreenwashingContent" class="hidden space-y-4">
+                    <div class="glass-card rounded-2xl p-5 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-shield-halved text-amber-400"></i> Evaluación de Greenwashing
+                            </h3>
+                            <span id="gwRiskBadge" class="px-2.5 py-1 rounded-lg text-xs font-bold">--</span>
+                        </div>
+
+                        <div id="gwDetailBox" class="p-4 rounded-xl border bg-slate-900/60 border-slate-800 space-y-2">
+                            <h4 id="gwTitle" class="font-semibold text-slate-200 text-sm">--</h4>
+                            <p id="gwExplanation" class="text-sm text-slate-300 leading-relaxed"></p>
+                        </div>
+
+                        <div class="space-y-2">
+                            <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Inconsistencias Detectadas:</h4>
+                            <ul id="gwFlagsList" class="space-y-2 text-sm text-slate-300">
+                                <!-- Dynamic List items -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: 12 Green Chemistry Principles Evaluation -->
+                <div id="tabPrinciplesContent" class="hidden space-y-4">
+                    <div class="glass-card rounded-2xl p-5 space-y-3">
+                        <h3 class="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-list-check text-teal-400"></i> Cumplimiento de los 12 Principios
+                        </h3>
+                        <p class="text-xs text-slate-400">Evaluación de la sustentabilidad basada en el texto científico de la Química Verde:</p>
+                        
+                        <div id="principlesContainer" class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                            <!-- Dynamic Cards for 12 Principles -->
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Modal para configurar Custom API Key si el usuario lo requiere -->
+    <div id="apiKeyModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="glass-card rounded-2xl p-6 max-w-md w-full border border-slate-700 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-lg text-slate-100 flex items-center gap-2">
+                    <i class="fa-solid fa-key text-amber-400"></i> Clave API de OpenRouter
+                </h3>
+                <button id="closeKeyModal" class="text-slate-400 hover:text-white text-lg">&times;</button>
+            </div>
+            <p class="text-xs text-slate-300 leading-relaxed">
+                Aquí puedes gestionar tu clave personalizada de OpenRouter:
+            </p>
+            <input type="password" id="customApiKeyInput" placeholder="sk-or-v1-..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500">
+            <div class="flex justify-end gap-2 pt-2">
+                <button id="clearApiKeyBtn" class="px-3 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white bg-slate-800">Limpiar</button>
+                <button id="saveApiKeyBtn" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-950 bg-emerald-400 hover:bg-emerald-300">Guardar Clave</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application JavaScript Logic -->
+    <script>
+        // Configuración de Firebase integrada (disponible para uso en app o analíticas)
+        const firebaseConfig = {
+            apiKey: "AIzaSyC_MyjSFLB-mHDWWaOfAlRetLDB_pAxgR0",
+            authDomain: "ango-592a4.firebaseapp.com",
+            databaseURL: "https://ango-592a4-default-rtdb.firebaseio.com",
+            projectId: "ango-592a4",
+            storageBucket: "ango-592a4.firebasestorage.app",
+            messagingSenderId: "234305709468",
+            appId: "1:234305709468:web:4a3009360c6033649dd459",
+            measurementId: "G-4YVSD60SP6"
+        };
+
+        // System state and DOM elements
+        let stream = null;
+        let capturedBase64 = null; // Una sola imagen optimizada para velocidad
+        let customApiKey = localStorage.getItem('openrouter_api_key') || "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";
+
+        const video = document.getElementById('webcamVideo');
+        const imagePreview = document.getElementById('imagePreview');
+        const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+        const captureCanvas = document.getElementById('captureCanvas');
+        const toggleCameraBtn = document.getElementById('toggleCameraBtn');
+        const cameraBtnText = document.getElementById('cameraBtnText');
+        const fileInput = document.getElementById('fileInput');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const scanLine = document.getElementById('scanLine');
+
+        // State views
+        const idleState = document.getElementById('idleState');
+        const loadingState = document.getElementById('loadingState');
+        const resultState = document.getElementById('resultState');
+
+        // Modal elements
+        const openKeyModal = document.getElementById('openKeyModal');
+        const closeKeyModal = document.getElementById('closeKeyModal');
+        const apiKeyModal = document.getElementById('apiKeyModal');
+        const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
+        const clearApiKeyBtn = document.getElementById('clearApiKeyBtn');
+        const customApiKeyInput = document.getElementById('customApiKeyInput');
+        const keyStatusText = document.getElementById('keyStatusText');
+
+        // Initialize API Key status
+        updateKeyStatusUI();
+
+        // System Prompt defining AI behavior and output format
+        const SYSTEM_PROMPT = `
+Eres un científico experto en Química Verde, sostenibilidad de materiales y detección de Greenwashing.
+Tu tarea es analizar la fotografía de un producto o empaque capturada por el usuario.
+
+Debes extraer el material principal (ej: Polipropileno PP, PET, HDPE, cartón, aluminio, vidrios, derivados de petróleo, biodegradables, etc.), evaluar si existe GREENWASHING (por ejemplo: vender plástico de polipropileno no biodegradable como "bolsa ecológica" o "amigable con el planeta") y verificar su alineación con los 12 Principios de la Química Verde.
+
+Debes responder ÚNICAMENTE en formato JSON válido estructurado exactamente así:
+{
+  "productName": "Nombre estimado del producto o tipo de empaque",
+  "materialInfo": {
+    "name": "Ej: Polipropileno (PP #5) / Derivado de petróleo",
+    "origin": "Sintético / Petroquímico / Orgánico / Reciclado",
+    "recyclability": "Alta / Media / Difícil / Nula",
+    "endOfLife": "No biodegradable (persiste cientos de años) / Compostable / etc",
+    "description": "Explicación breve de la naturaleza química del material."
+  },
+  "greenwashingAudit": {
+    "verdict": "Greenwashing Alto" | "Greenwashing Moderado" | "Greenwashing Leve" | "Sostenible / Legítimo",
+    "riskLevel": "alto" | "moderado" | "bajo" | "ninguno",
+    "title": "Resumen claro del dictamen de Greenwashing",
+    "explanation": "Explicación detallada de por qué es o no engañoso.",
+    "inconsistencies": [
+      "Inconsistencia 1 (ej: Se vende como verde pero es plástico derivado del petróleo)",
+      "Inconsistencia 2 (ej: Es difícil de reciclar comercialmente)"
+    ]
+  },
+  "greenChemistryPrinciples": [
+    { "id": 1, "name": "Prevención de Residuos", "status": "Cumple" | "No Cumple" | "Parcial", "note": "Breve nota de evaluación" },
+    { "id": 2, "name": "Economía Atómica", "status": "Cumple" | "No Cumple" | "Parcial", "note": "Breve nota de evaluación" },
+    { "id": 3, "name": "Síntesis Menos Peligrosa", "status": "Cumple" | "No Cumple" | "Parcial", "note": "Breve nota de evaluación" },
+    { "id": 4, "name": "Diseño de Productos Más Seguros", "status": "Cumple" | "No Cumple" | "Parcial", "note": "Breve nota de evaluación" },
+    { "id": 5, "name": "Solventes y Auxiliares Seguros", "status": "Cumple" | "No Cumple" | "Parcial", "note": "Breve nota de evaluación" },
+    { "id": 6, "name": "Eficiencia Energética", "status": "Cumple" | "No Cumple" | "Parcial", "note": "Breve nota de evaluación" },
+    { "id": 7, "name": "Materias Primas Renovables", "status": "Cumple" | "No Cumple" | "Parcial", "note": "Breve nota de evaluación" },
+    { "id": 8, "name": "Reducción de Derivados", "status": "Cumple" | "No Cumple" | "Parcial", "note": "Breve nota de evaluación" },
+    { "id": 9, "name": "Catálisis", "status": "Cumple" | "No Cumple" | "Parcial", "note": "Breve nota de evaluación" },
+    { "id": 10, "name": "Diseño para la Degradación", "status": "Cumple" | "No Cumple" | "Parcial", "note": "Breve nota de evaluación" },
+    { "id": 11, "name": "Análisis en Tiempo Real", "status": "Cumple" | "No Cumple" | "Parcial", "note": "Breve nota de evaluación" },
+    { "id": 12, "name": "Química Inherentemente Segura", "status": "Cumple" | "No Cumple" | "Parcial", "note": "Breve nota de evaluación" }
+  ],
+  "summaryVerdict": "Un párrafo final concluyente sobre el impacto real del producto."
+}
+`;
+
+        // Camera control functions
+        async function startCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+                    audio: false
+                });
+                video.srcObject = stream;
+                video.classList.remove('hidden');
+                imagePreview.classList.add('hidden');
+                uploadPlaceholder.classList.add('hidden');
+                cameraBtnText.textContent = "Detener Cámara";
+                analyzeBtn.disabled = false;
+            } catch (err) {
+                alert("No se pudo acceder a la cámara. Recuerda que GitHub Pages usa HTTPS para habilitar la cámara de forma segura.");
+                console.error(err);
+            }
+        }
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            video.classList.add('hidden');
+            cameraBtnText.textContent = "Iniciar Cámara";
+            if (!capturedBase64) {
+                uploadPlaceholder.classList.remove('hidden');
+                analyzeBtn.disabled = true;
+            }
+        }
+
+        toggleCameraBtn.addEventListener('click', () => {
+            if (stream) {
+                stopCamera();
+            } else {
+                startCamera();
+            }
         });
-      }, 'image/jpeg', 0.95);
-    }
 
-    async function consultarAPIGlobal(codigo) {
-      mostrarCargando("Consultando bases de datos mundiales...");
-      try {
-        let res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${codigo}.json`);
-        let data = await res.json();
+        // Handle File Upload (Single image for max speed)
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
 
-        if (data.status === 1 && data.product) {
-          procesarDatosProducto(
-            data.product.product_name || "Producto Internacional",
-            data.product.brands || "Marca Global",
-            codigo,
-            [
-              data.product.ingredients_text || '',
-              data.product.ingredients_text_es || '',
-              data.product.ingredients_text_en || ''
-            ].join(" ")
-          );
-          return;
+            stopCamera();
+
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                imagePreview.src = evt.target.result;
+                imagePreview.classList.remove('hidden');
+                uploadPlaceholder.classList.add('hidden');
+                capturedBase64 = evt.target.result;
+                analyzeBtn.disabled = false;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // Capture frame from active camera
+        function captureFrame() {
+            if (stream && !video.classList.contains('hidden')) {
+                captureCanvas.width = video.videoWidth || 640;
+                captureCanvas.height = video.videoHeight || 480;
+                const ctx = captureCanvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
+                const dataUrl = captureCanvas.toDataURL('image/jpeg', 0.85);
+                capturedBase64 = dataUrl;
+                imagePreview.src = dataUrl;
+                video.classList.add('hidden');
+                imagePreview.classList.remove('hidden');
+                stopCamera();
+            }
         }
 
-        let resUpc = await fetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${codigo}`);
-        let dataUpc = await resUpc.json();
+        // Trigger AI Analysis via OpenRouter Nemotron VL API
+        analyzeBtn.addEventListener('click', async () => {
+            if (stream && !video.classList.contains('hidden')) {
+                captureFrame();
+            }
 
-        if (dataUpc && dataUpc.items && dataUpc.items.length > 0) {
-          const item = dataUpc.items[0];
-          procesarDatosProducto(
-            item.title || "Producto Comercial",
-            item.brand || "Importado",
-            codigo,
-            (item.description || "") + " " + (item.title || "")
-          );
-          return;
+            if (!capturedBase64) {
+                alert("Por favor toma una foto o carga una imagen primero.");
+                return;
+            }
+
+            // Update UI State
+            idleState.classList.add('hidden');
+            resultState.classList.add('hidden');
+            loadingState.classList.remove('hidden');
+            scanLine.classList.remove('hidden');
+            analyzeBtn.disabled = true;
+
+            try {
+                const analysisResult = await callNemotronVisionApi(capturedBase64);
+                renderResults(analysisResult);
+            } catch (error) {
+                console.error("Error analizando la imagen:", error);
+                alert("Ocurrió un error al analizar con la IA: " + error.message);
+                idleState.classList.remove('hidden');
+            } finally {
+                loadingState.classList.add('hidden');
+                scanLine.classList.add('hidden');
+                analyzeBtn.disabled = false;
+            }
+        });
+
+        // OpenRouter Nemotron Multimodal API Call Handler
+        async function callNemotronVisionApi(imageUrl) {
+            const apiKey = customApiKey;
+            const apiUrl = "https://openrouter.ai/api/v1/chat/completions";
+
+            const payload = {
+                model: "nvidia/nemotron-3.5-super-vl:free",
+                messages: [
+                    {
+                        role: "system",
+                        content: SYSTEM_PROMPT
+                    },
+                    {
+                        role: "user",
+                        content: [
+                            { type: "text", text: "Analiza el material de este producto y evalúa su greenwashing/química verde según las instrucciones." },
+                            { type: "image_url", image_url: { url: imageUrl } }
+                        ]
+                    }
+                ]
+            };
+
+            // Retry logic with exponential backoff
+            let response = null;
+            let delay = 1000;
+            for (let i = 0; i < 3; i++) {
+                try {
+                    response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${apiKey}`,
+                            'HTTP-Referer': window.location.href,
+                            'X-Title': 'EcoScan IA'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                    if (response.ok) break;
+                } catch (e) {
+                    if (i === 2) throw e;
+                }
+                await new Promise(res => setTimeout(res, delay));
+                delay *= 2;
+            }
+
+            if (!response || !response.ok) {
+                const errText = await response?.text();
+                throw new Error(`Respuesta de la API no válida (Status: ${response?.status}) - ${errText}`);
+            }
+
+            const data = await response.json();
+            let rawJsonText = data.choices?.[0]?.message?.content;
+
+            if (!rawJsonText) {
+                throw new Error("No se recibió respuesta estructurada de la IA.");
+            }
+
+            // Limpieza de bloques markdown si el modelo los incluye
+            rawJsonText = rawJsonText.trim();
+            if (rawJsonText.startsWith("```json")) {
+                rawJsonText = rawJsonText.replace(/^```json/, "").replace(/```$/, "").trim();
+            } else if (rawJsonText.startsWith("```")) {
+                rawJsonText = rawJsonText.replace(/^```/, "").replace(/```$/, "").trim();
+            }
+
+            return JSON.parse(rawJsonText);
         }
 
-        mostrarNoRegistrado(codigo);
-      } catch (err) {
-        mostrarNoRegistrado(codigo);
-      }
-    }
+        // Render AI Results onto the Dashboard
+        function renderResults(data) {
+            // General Info
+            document.getElementById('productTitle').textContent = data.productName || "Producto Analizado";
+            document.getElementById('verdictSummary').textContent = data.summaryVerdict || "";
 
-    function procesarDatosProducto(nombre, marca, codigo, textoIngredientes) {
-      document.getElementById('scanner-card').classList.add('hidden');
-      document.getElementById('result-card').classList.remove('hidden');
+            // Greenwashing Risk Badge
+            const gw = data.greenwashingAudit || {};
+            const gwBadge = document.getElementById('verdictBadge');
+            const gwRisk = (gw.riskLevel || 'bajo').toLowerCase();
 
-      document.getElementById('res-product-name').innerText = nombre;
-      document.getElementById('res-brand').innerText = marca;
-      document.getElementById('res-code').innerText = `Código: ${codigo}`;
+            gwBadge.textContent = gw.verdict || "Evaluado";
+            if (gwRisk === 'alto') {
+                gwBadge.className = "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/40";
+            } else if (gwRisk === 'moderado') {
+                gwBadge.className = "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40";
+            } else {
+                gwBadge.className = "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/40";
+            }
 
-      let encontrado = false;
-      let coincidencia = "";
-      const textoLimpio = textoIngredientes.toLowerCase();
+            // Material Tab
+            const mat = data.materialInfo || {};
+            document.getElementById('materialTypeBadge').textContent = mat.name ? mat.name.split('/')[0] : "Material";
+            document.getElementById('matName').textContent = mat.name || "No identificado";
+            document.getElementById('matOrigin').textContent = mat.origin || "N/D";
+            document.getElementById('matRecyclability').textContent = mat.recyclability || "N/D";
+            document.getElementById('matEol').textContent = mat.endOfLife || "N/D";
+            document.getElementById('matDescription').textContent = mat.description || "Sin detalles adicionales.";
 
-      for (let termino of terminosGlicerina) {
-        if (textoLimpio.includes(termino)) {
-          encontrado = true;
-          coincidencia = termino;
-          break;
+            // Greenwashing Tab
+            const gwRiskBadge = document.getElementById('gwRiskBadge');
+            gwRiskBadge.textContent = `Riesgo: ${gw.riskLevel || 'N/A'}`;
+            gwRiskBadge.className = gwRisk === 'alto' ? "px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30" : "px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30";
+
+            document.getElementById('gwTitle').textContent = gw.title || "Resultado del análisis";
+            document.getElementById('gwExplanation').textContent = gw.explanation || "";
+
+            const flagsList = document.getElementById('gwFlagsList');
+            flagsList.innerHTML = '';
+            (gw.inconsistencies || []).forEach(flag => {
+                const li = document.createElement('li');
+                li.className = "flex items-start gap-2 bg-slate-900/40 p-2.5 rounded-lg border border-slate-800/60";
+                li.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-amber-400 mt-0.5 text-xs"></i><span>${flag}</span>`;
+                flagsList.appendChild(li);
+            });
+
+            // 12 Principles Tab
+            const pContainer = document.getElementById('principlesContainer');
+            pContainer.innerHTML = '';
+            (data.greenChemistryPrinciples || []).forEach(p => {
+                const card = document.createElement('div');
+                let statusColor = "text-slate-400 bg-slate-800/50 border-slate-700/50";
+                let icon = "fa-circle-question";
+
+                if (p.status === "Cumple") {
+                    statusColor = "text-emerald-400 bg-emerald-950/30 border-emerald-800/40";
+                    icon = "fa-circle-check";
+                } else if (p.status === "No Cumple") {
+                    statusColor = "text-rose-400 bg-rose-950/30 border-rose-800/40";
+                    icon = "fa-circle-xmark";
+                } else if (p.status === "Parcial") {
+                    statusColor = "text-amber-400 bg-amber-950/30 border-amber-800/40";
+                    icon = "fa-circle-exclamation";
+                }
+
+                card.className = `p-3 rounded-xl border text-xs flex flex-col justify-between ${statusColor}`;
+                card.innerHTML = `
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="font-bold text-slate-200">${p.id}. ${p.name}</span>
+                        <i class="fa-solid ${icon}"></i>
+                    </div>
+                    <p class="text-slate-400 text-[11px] leading-tight">${p.note || ''}</p>
+                `;
+                pContainer.appendChild(card);
+            });
+
+            // Show result view
+            resultState.classList.remove('hidden');
+            switchTab('material');
         }
-      }
 
-      if (encontrado) {
-        document.getElementById('badge-container').innerHTML = `
-          <div class="bg-rose-500/10 border border-rose-500/30 p-3 rounded-xl text-center animate-pulse">
-            <span class="text-rose-500 font-extrabold text-sm block">🚨 ¡ALERTA ROJA: CONTIENE GLICERINA!</span>
-          </div>`;
-        document.getElementById('res-analysis').innerText = "Se detectó presencia de glicerina en la formulación de este producto.";
-        document.getElementById('terms-box').classList.remove('hidden');
-        document.getElementById('res-terms-found').innerText = `Término hallado: "${coincidencia}"`;
-      } else {
-        document.getElementById('badge-container').innerHTML = `
-          <div class="bg-emerald-500/10 border border-emerald-500/30 p-3 rounded-xl text-center">
-            <span class="text-emerald-400 font-bold text-sm block">✅ 100% LIBRE DE GLICERINA</span>
-          </div>`;
-        document.getElementById('res-analysis').innerText = "No se encontró ningún término asociado a glicerina o E422 en este registro.";
-        document.getElementById('terms-box').classList.add('hidden');
-      }
-    }
+        // Tab Switching Logic
+        const tabMaterialBtn = document.getElementById('tabMaterialBtn');
+        const tabGreenwashingBtn = document.getElementById('tabGreenwashingBtn');
+        const tabPrinciplesBtn = document.getElementById('tabPrinciplesBtn');
 
-    function mostrarNoRegistrado(codigo) {
-      document.getElementById('scanner-card').classList.add('hidden');
-      document.getElementById('result-card').classList.remove('hidden');
+        const tabMaterialContent = document.getElementById('tabMaterialContent');
+        const tabGreenwashingContent = document.getElementById('tabGreenwashingContent');
+        const tabPrinciplesContent = document.getElementById('tabPrinciplesContent');
 
-      document.getElementById('res-product-name').innerText = "Código No Registrado en APIs";
-      document.getElementById('res-brand').innerText = "Desconocida";
-      document.getElementById('res-code').innerText = `Código: ${codigo}`;
+        function switchTab(tabName) {
+            tabMaterialContent.classList.add('hidden');
+            tabGreenwashingContent.classList.add('hidden');
+            tabPrinciplesContent.classList.add('hidden');
 
-      document.getElementById('badge-container').innerHTML = `
-        <div class="bg-amber-500/10 border border-amber-500/30 p-4 rounded-xl text-center">
-          <span class="text-amber-400 font-bold text-sm block">⚠️ ARTÍCULO NO INDEXADO</span>
-          <p class="text-xs text-slate-300 mt-2">Usa el modo <strong>"OCR Cámara"</strong> para enfocar de cerca la lista de ingredientes.</p>
-        </div>`;
-      document.getElementById('res-analysis').innerText = "Usa la cámara en vivo para escanear el texto de los ingredientes al instante.";
-      document.getElementById('terms-box').classList.add('hidden');
-    }
+            tabMaterialBtn.className = "pb-2 text-sm font-semibold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition";
+            tabGreenwashingBtn.className = "pb-2 text-sm font-semibold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition";
+            tabPrinciplesBtn.className = "pb-2 text-sm font-semibold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition";
 
-    function mostrarCargando(mensaje) {
-      document.getElementById('scanner-card').classList.add('hidden');
-      document.getElementById('ocr-card').classList.add('hidden');
-      document.getElementById('result-card').classList.remove('hidden');
-      document.getElementById('res-product-name').innerText = mensaje;
-      document.getElementById('res-brand').innerText = "...";
-      document.getElementById('res-code').innerText = "...";
-      document.getElementById('badge-container').innerHTML = `<div class="bg-slate-800 text-slate-300 text-xs p-3 rounded-xl text-center font-bold animate-pulse">PROCESANDO...</div>`;
-      document.getElementById('res-analysis').innerText = "Analizando texto...";
-      document.getElementById('terms-box').classList.add('hidden');
-    }
+            if (tabName === 'material') {
+                tabMaterialContent.classList.remove('hidden');
+                tabMaterialBtn.className = "pb-2 text-sm font-semibold text-emerald-400 border-b-2 border-emerald-400 transition";
+            } else if (tabName === 'greenwashing') {
+                tabGreenwashingContent.classList.remove('hidden');
+                tabGreenwashingBtn.className = "pb-2 text-sm font-semibold text-emerald-400 border-b-2 border-emerald-400 transition";
+            } else if (tabName === 'principles') {
+                tabPrinciplesContent.classList.remove('hidden');
+                tabPrinciplesBtn.className = "pb-2 text-sm font-semibold text-emerald-400 border-b-2 border-emerald-400 transition";
+            }
+        }
 
-    function reiniciarApp() {
-      document.getElementById('result-card').classList.add('hidden');
-      document.getElementById('manual-ean').value = '';
-      cambiarModo('barcode');
-    }
+        tabMaterialBtn.addEventListener('click', () => switchTab('material'));
+        tabGreenwashingBtn.addEventListener('click', () => switchTab('greenwashing'));
+        tabPrinciplesBtn.addEventListener('click', () => switchTab('principles'));
 
-    window.onload = inicializarEscaner;
-  </script>
+        // API Key Modal Event Handlers
+        openKeyModal.addEventListener('click', () => {
+            customApiKeyInput.value = customApiKey;
+            apiKeyModal.classList.remove('hidden');
+        });
+
+        closeKeyModal.addEventListener('click', () => {
+            apiKeyModal.classList.add('hidden');
+        });
+
+        saveApiKeyBtn.addEventListener('click', () => {
+            customApiKey = customApiKeyInput.value.trim();
+            if (customApiKey) {
+                localStorage.setItem('openrouter_api_key', customApiKey);
+            } else {
+                localStorage.removeItem('openrouter_api_key');
+            }
+            updateKeyStatusUI();
+            apiKeyModal.classList.add('hidden');
+        });
+
+        clearApiKeyBtn.addEventListener('click', () => {
+            customApiKey = "";
+            localStorage.removeItem('openrouter_api_key');
+            customApiKeyInput.value = "";
+            updateKeyStatusUI();
+            apiKeyModal.classList.add('hidden');
+        });
+
+        function updateKeyStatusUI() {
+            if (customApiKey) {
+                keyStatusText.textContent = "API Key Activa";
+            } else {
+                keyStatusText.textContent = "Sin API Key";
+            }
+        }
+    </script>
 </body>
 </html>
