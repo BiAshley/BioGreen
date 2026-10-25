@@ -193,15 +193,18 @@
                 </div>
 
                 <!-- Tabs Navigation -->
-                <div class="flex border-b border-slate-800 gap-4">
-                    <button id="tabMaterialBtn" class="pb-2 text-sm font-semibold text-emerald-400 border-b-2 border-emerald-400 transition">
+                <div class="flex border-b border-slate-800 gap-4 overflow-x-auto">
+                    <button id="tabMaterialBtn" class="pb-2 text-sm font-semibold text-emerald-400 border-b-2 border-emerald-400 transition whitespace-nowrap">
                         <i class="fa-solid fa-cube mr-1"></i> Material & Composición
                     </button>
-                    <button id="tabGreenwashingBtn" class="pb-2 text-sm font-semibold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition">
+                    <button id="tabGreenwashingBtn" class="pb-2 text-sm font-semibold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition whitespace-nowrap">
                         <i class="fa-solid fa-triangle-exclamation mr-1"></i> Auditoría Greenwashing
                     </button>
-                    <button id="tabPrinciplesBtn" class="pb-2 text-sm font-semibold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition">
+                    <button id="tabPrinciplesBtn" class="pb-2 text-sm font-semibold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition whitespace-nowrap">
                         <i class="fa-solid fa-vial mr-1"></i> 12 Principios
+                    </button>
+                    <button id="tabLegalBtn" class="pb-2 text-sm font-semibold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition whitespace-nowrap">
+                        <i class="fa-solid fa-scale-balanced mr-1"></i> Marco Legal
                     </button>
                 </div>
 
@@ -267,10 +270,48 @@
                         <h3 class="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
                             <i class="fa-solid fa-list-check text-teal-400"></i> Cumplimiento de los 12 Principios
                         </h3>
-                        <p class="text-xs text-slate-400">Evaluación de la sustentabilidad basada en el texto científico de la Química Verde:</p>
+                        <p class="text-xs text-slate-400">Evaluación de la sustentabilidad basada en el texto científico de la Química Verde (Verde = Cumple, Amarillo = Parcial, Rojo = No Cumple):</p>
                         
                         <div id="principlesContainer" class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
                             <!-- Dynamic Cards for 12 Principles -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 4: Marco Legal y Normativo Integrado -->
+                <div id="tabLegalContent" class="hidden space-y-4">
+                    <div class="glass-card rounded-2xl p-5 space-y-4 text-sm">
+                        <div class="flex items-center gap-2 text-emerald-400 font-semibold text-base mb-2">
+                            <i class="fa-solid fa-scale-balanced"></i> Marco Normativo Aplicable al Caso
+                        </div>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Las exigencias legales y sanciones se aplican de manera dinámica según el nivel de riesgo de Greenwashing detectado en el producto:
+                        </p>
+
+                        <!-- Dinámico según el riesgo -->
+                        <div id="legalDynamicSection" class="space-y-4">
+                            <!-- Se inyecta dinámicamente o muestra resumen normativo global -->
+                        </div>
+
+                        <div class="border-t border-slate-800 pt-3 space-y-3 text-xs text-slate-300">
+                            <h4 class="font-bold text-slate-200 uppercase tracking-wider">1. Marco Normativo en Colombia (Leyes Complementarias)</h4>
+                            <div class="space-y-2 bg-slate-900/40 p-3 rounded-xl border border-slate-800">
+                                <p><strong>A. Ley 2232 de 2022:</strong> Regula plásticos de un solo uso. Exige etiquetado veraz y estandarizado (Artículo 11). Sanciona afirmaciones falsas de biodegradabilidad.</p>
+                                <p><strong>B. Ley 2169 de 2021:</strong> Ley de Acción Climática y Carbono Neutralidad. Sanciona presentar información falsa ante el RENARE o adulterar reportes de emisiones.</p>
+                                <p><strong>C. Ley 2195 de 2022:</strong> Transparencia y Lucha contra la Corrupción. Inhabilidades de hasta 20 años y multas por presentar informes ambientales falsos en licitaciones.</p>
+                            </div>
+
+                            <h4 class="font-bold text-slate-200 uppercase tracking-wider pt-2">2. Normativa Financiera y del Mercado de Capitales</h4>
+                            <div class="space-y-2 bg-slate-900/40 p-3 rounded-xl border border-slate-800">
+                                <p><strong>A. Decreto 2555 de 2010:</strong> Regula deberes de información en el mercado de valores frente a proyectos ESG/ASG fraudulentos.</p>
+                                <p><strong>B. Taxonomía Verde de Colombia:</strong> Sistema oficial del MinHacienda. Sanciona catalogar créditos o bonos como verdes sin cumplir métricas técnicas.</p>
+                            </div>
+
+                            <h4 class="font-bold text-slate-200 uppercase tracking-wider pt-2">3. Normativa Internacional y de la Unión Europea</h4>
+                            <div class="space-y-2 bg-slate-900/40 p-3 rounded-xl border border-slate-800">
+                                <p><strong>A. Directiva (UE) 2024/825 (Green Claims):</strong> Prohíbe afirmaciones genéricas como "ecológico" o "carbono neutro" basadas solo en compensaciones (offsets).</p>
+                                <p><strong>B. Reglamento EUDR 2023/1115:</strong> Prohíbe importar materias primas de tierras deforestadas y castiga la falsificación de trazabilidad.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -319,6 +360,7 @@
         let stream = null;
         let capturedImagesArray = []; // Guarda hasta 2 imágenes
         let customApiKey = localStorage.getItem('openrouter_api_key') || "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";
+        let lastAnalysisResult = null; // Guardar último resultado para el marco legal dinámico
 
         const video = document.getElementById('webcamVideo');
         const imagePreviewGrid = document.getElementById('imagePreviewGrid');
@@ -427,7 +469,6 @@ Debes responder ÚNICAMENTE en formato JSON válido estructurado exactamente as�
                 analyzeBtn.disabled = true;
             }
 
-            // Actualizar texto del botón según el cupo
             if (capturedImagesArray.length >= 2) {
                 cameraBtnText.textContent = "Límite 2 fotos";
             } else if (stream) {
@@ -476,7 +517,7 @@ Debes responder ÚNICAMENTE en formato JSON válido estructurado exactamente as�
             }
         });
 
-        // Handle File Upload (Soporta seleccionar o añadir hasta 2 imágenes)
+        // Handle File Upload
         fileInput.addEventListener('change', (e) => {
             const files = Array.from(e.target.files);
             if (!files || files.length === 0) return;
@@ -535,6 +576,7 @@ Debes responder ÚNICAMENTE en formato JSON válido estructurado exactamente as�
 
             try {
                 const analysisResult = await processVisionData(capturedImagesArray);
+                lastAnalysisResult = analysisResult;
                 renderResults(analysisResult);
             } catch (error) {
                 console.error("Error en el procesamiento:", error);
@@ -552,7 +594,6 @@ Debes responder ÚNICAMENTE en formato JSON válido estructurado exactamente as�
             const apiKey = customApiKey;
             const apiUrl = "https://openrouter.ai/api/v1/chat/completions";
 
-            // Construir payload admitiendo hasta 2 imágenes
             let userContentParts = [
                 { type: "text", text: "Analiza el material de este producto y evalúa su greenwashing/química verde según las instrucciones." }
             ];
@@ -578,7 +619,6 @@ Debes responder ÚNICAMENTE en formato JSON válido estructurado exactamente as�
                 ]
             };
 
-            // Retry logic with exponential backoff
             let response = null;
             let delay = 1000;
             for (let i = 0; i < 3; i++) {
@@ -665,6 +705,7 @@ Debes responder ÚNICAMENTE en formato JSON válido estructurado exactamente as�
                 flagsList.appendChild(li);
             });
 
+            // 12 Principles rendering (Soporta Verde, Amarillo y Rojo dinámicamente)
             const pContainer = document.getElementById('principlesContainer');
             pContainer.innerHTML = '';
             (data.greenChemistryPrinciples || []).forEach(p => {
@@ -694,6 +735,31 @@ Debes responder ÚNICAMENTE en formato JSON válido estructurado exactamente as�
                 pContainer.appendChild(card);
             });
 
+            // Marco Legal Dinámico según nivel de riesgo
+            const legalDynamicSection = document.getElementById('legalDynamicSection');
+            if (gwRisk === 'alto') {
+                legalDynamicSection.innerHTML = `
+                    <div class="p-3.5 rounded-xl bg-rose-950/30 border border-rose-800/50 text-rose-200 text-xs space-y-1">
+                        <strong class="block font-bold text-rose-400"><i class="fa-solid fa-triangle-exclamation"></i> Dictamen: Greenwashing Alto / Fraude</strong>
+                        <p>El producto presenta afirmaciones engañosas severas o uso indebido de atributos ecológicos. Se expone a sanciones graves bajo la <strong>Ley 2232 de 2022</strong> (etiquetado falso) y posibles investigaciones por fraude comercial o infracciones administrativas en licitaciones y normativas de transparencia (Ley 2195).</p>
+                    </div>
+                `;
+            } else if (gwRisk === 'moderado') {
+                legalDynamicSection.innerHTML = `
+                    <div class="p-3.5 rounded-xl bg-amber-950/30 border border-amber-800/40 text-amber-200 text-xs space-y-1">
+                        <strong class="block font-bold text-amber-400"><i class="fa-solid fa-circle-exclamation"></i> Dictamen: Greenwashing Moderado / Advertencia</strong>
+                        <p>El diseño o las características sugieren atributos ecológicos ambiguos sin soporte técnico suficiente. Requiere corrección publicitaria para cumplir con el principio de información veraz (Decreto 2555 y normativas de lealtad comercial).</p>
+                    </div>
+                `;
+            } else {
+                legalDynamicSection.innerHTML = `
+                    <div class="p-3.5 rounded-xl bg-emerald-950/30 border border-emerald-800/40 text-emerald-200 text-xs space-y-1">
+                        <strong class="block font-bold text-emerald-400"><i class="fa-solid fa-circle-check"></i> Dictamen: Producto Legal y Conforme</strong>
+                        <p>El producto no incurre en prácticas engañosas de greenwashing y su comercialización se encuentra dentro del marco legal regulatorio vigente sin observaciones punitivas.</p>
+                    </div>
+                `;
+            }
+
             resultState.classList.remove('hidden');
             switchTab('material');
         }
@@ -702,35 +768,43 @@ Debes responder ÚNICAMENTE en formato JSON válido estructurado exactamente as�
         const tabMaterialBtn = document.getElementById('tabMaterialBtn');
         const tabGreenwashingBtn = document.getElementById('tabGreenwashingBtn');
         const tabPrinciplesBtn = document.getElementById('tabPrinciplesBtn');
+        const tabLegalBtn = document.getElementById('tabLegalBtn');
 
         const tabMaterialContent = document.getElementById('tabMaterialContent');
         const tabGreenwashingContent = document.getElementById('tabGreenwashingContent');
         const tabPrinciplesContent = document.getElementById('tabPrinciplesContent');
+        const tabLegalContent = document.getElementById('tabLegalContent');
 
         function switchTab(tabName) {
             tabMaterialContent.classList.add('hidden');
             tabGreenwashingContent.classList.add('hidden');
             tabPrinciplesContent.classList.add('hidden');
+            tabLegalContent.classList.add('hidden');
 
-            tabMaterialBtn.className = "pb-2 text-sm font-semibold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition";
-            tabGreenwashingBtn.className = "pb-2 text-sm font-semibold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition";
-            tabPrinciplesBtn.className = "pb-2 text-sm font-semibold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition";
+            tabMaterialBtn.className = "pb-2 text-sm font-semibold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition whitespace-nowrap";
+            tabGreenwashingBtn.className = "pb-2 text-sm font-semibold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition whitespace-nowrap";
+            tabPrinciplesBtn.className = "pb-2 text-sm font-semibold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition whitespace-nowrap";
+            tabLegalBtn.className = "pb-2 text-sm font-semibold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition whitespace-nowrap";
 
             if (tabName === 'material') {
                 tabMaterialContent.classList.remove('hidden');
-                tabMaterialBtn.className = "pb-2 text-sm font-semibold text-emerald-400 border-b-2 border-emerald-400 transition";
+                tabMaterialBtn.className = "pb-2 text-sm font-semibold text-emerald-400 border-b-2 border-emerald-400 transition whitespace-nowrap";
             } else if (tabName === 'greenwashing') {
                 tabGreenwashingContent.classList.remove('hidden');
-                tabGreenwashingBtn.className = "pb-2 text-sm font-semibold text-emerald-400 border-b-2 border-emerald-400 transition";
+                tabGreenwashingBtn.className = "pb-2 text-sm font-semibold text-emerald-400 border-b-2 border-emerald-400 transition whitespace-nowrap";
             } else if (tabName === 'principles') {
                 tabPrinciplesContent.classList.remove('hidden');
-                tabPrinciplesBtn.className = "pb-2 text-sm font-semibold text-emerald-400 border-b-2 border-emerald-400 transition";
+                tabPrinciplesBtn.className = "pb-2 text-sm font-semibold text-emerald-400 border-b-2 border-emerald-400 transition whitespace-nowrap";
+            } else if (tabName === 'legal') {
+                tabLegalContent.classList.remove('hidden');
+                tabLegalBtn.className = "pb-2 text-sm font-semibold text-emerald-400 border-b-2 border-emerald-400 transition whitespace-nowrap";
             }
         }
 
         tabMaterialBtn.addEventListener('click', () => switchTab('material'));
         tabGreenwashingBtn.addEventListener('click', () => switchTab('greenwashing'));
         tabPrinciplesBtn.addEventListener('click', () => switchTab('principles'));
+        tabLegalBtn.addEventListener('click', () => switchTab('legal'));
 
         // API Key Modal Event Handlers
         openKeyModal.addEventListener('click', () => {
