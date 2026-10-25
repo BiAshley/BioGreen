@@ -85,18 +85,7 @@
                     <i class="fa-solid fa-leaf text-xl"></i>
                 </div>
                 <div>
-                    <div class="flex items-center gap-2">
-                        <h1 class="font-bold text-lg leading-tight tracking-wide text-white">BioGreen</h1>
-                        <!-- Botones de instalación automática PWA -->
-                        <div class="flex items-center gap-1.5 pl-1 border-l border-slate-700">
-                            <button id="installAndroidBtn" class="text-slate-400 hover:text-emerald-400 transition p-1 text-xs" title="Instalar App">
-                                <i class="fa-brands fa-google-play"></i>
-                            </button>
-                            <button id="installAppleBtn" class="text-slate-400 hover:text-white transition p-1 text-xs" title="Instalar en iPhone">
-                                <i class="fa-brands fa-apple"></i>
-                            </button>
-                        </div>
-                    </div>
+                    <h1 class="font-bold text-lg leading-tight tracking-wide text-white">BioGreen</h1>
                     <p class="text-xs text-emerald-400 font-medium">Detector de Greenwashing & Química Verde</p>
                 </div>
             </div>
@@ -389,29 +378,6 @@
         let capturedImagesArray = []; // Guarda hasta 2 imágenes
         let customApiKey = localStorage.getItem('openrouter_api_key') || "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";
         let lastAnalysisResult = null; // Guardar último resultado para el marco legal dinámico
-
-        let deferredPrompt = null;
-        const installAndroidBtn = document.getElementById('installAndroidBtn');
-        const installAppleBtn = document.getElementById('installAppleBtn');
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-        });
-
-        installAndroidBtn.addEventListener('click', async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                deferredPrompt = null;
-            } else {
-                alert("Para instalar en Android: Abre el menú de tu navegador (3 puntos) y selecciona 'Instalar aplicación' o 'Agregar a la pantalla principal'.");
-            }
-        });
-
-        installAppleBtn.addEventListener('click', () => {
-            alert("Para instalar en iPhone: Toca el botón Compartir en Safari y selecciona 'Agregar al inicio'.");
-        });
 
         const video = document.getElementById('webcamVideo');
         const imagePreviewGrid = document.getElementById('imagePreviewGrid');
