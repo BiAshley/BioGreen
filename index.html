@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EcoScan - Química Verde & Detector de Greenwashing</title>
+    <title>BioGreen - Química Verde & Detector de Greenwashing</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome icons -->
@@ -68,14 +68,14 @@
                     <i class="fa-solid fa-leaf text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="font-bold text-lg leading-tight tracking-wide text-white">EcoScan IA</h1>
+                    <h1 class="font-bold text-lg leading-tight tracking-wide text-white">BioGreen</h1>
                     <p class="text-xs text-emerald-400 font-medium">Detector de Greenwashing & Química Verde</p>
                 </div>
             </div>
             
             <button id="openKeyModal" class="flex items-center gap-2 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-3 py-1.5 rounded-lg border border-slate-700 transition">
-                <i class="fa-solid fa-key text-amber-400"></i>
-                <span id="keyStatusText">API Key activa</span>
+                <i class="fa-solid fa-gear text-amber-400"></i>
+                <span id="keyStatusText">Sistema activo</span>
             </button>
         </div>
     </header>
@@ -95,15 +95,15 @@
                     <!-- Placeholder initial state -->
                     <div id="uploadPlaceholder" class="flex flex-col items-center justify-center p-6 text-center text-slate-400">
                         <i class="fa-solid fa-camera-retro text-4xl mb-3 text-slate-500"></i>
-                        <p class="text-sm font-medium text-slate-300">Apunta la cámara o sube una imagen del producto</p>
+                        <p class="text-sm font-medium text-slate-300">Apunta la cámara o sube hasta 2 imágenes del producto</p>
                         <p class="text-xs text-slate-500 mt-1">Detecta plásticos, etiquetas, empaques y materiales</p>
                     </div>
 
                     <!-- Live Video Feed -->
                     <video id="webcamVideo" autoplay playsinline class="hidden w-full h-full object-cover"></video>
 
-                    <!-- Captured / Selected Image Preview -->
-                    <img id="imagePreview" class="hidden w-full h-full object-contain bg-black/40" alt="Vista previa del producto">
+                    <!-- Captured / Selected Image Preview Grid (Max 2 imágenes) -->
+                    <div id="imagePreviewGrid" class="hidden w-full h-full p-2 grid grid-cols-2 gap-2 bg-black/40 items-center"></div>
 
                     <!-- Scan Line Overlay Animation -->
                     <div id="scanLine" class="hidden absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_15px_#34d399] scan-pulse z-10"></div>
@@ -122,7 +122,7 @@
                     <label class="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium py-2.5 px-4 rounded-xl border border-slate-700 cursor-pointer transition">
                         <i class="fa-solid fa-upload"></i>
                         <span>Subir Imagen</span>
-                        <input type="file" id="fileInput" accept="image/*" class="hidden">
+                        <input type="file" id="fileInput" accept="image/*" multiple class="hidden">
                     </label>
                 </div>
 
@@ -139,9 +139,9 @@
                     <i class="fa-solid fa-lightbulb text-amber-400"></i>
                     <span>¿Cómo funciona?</span>
                 </div>
-                <p>1. Fotografía el producto, el símbolo de reciclaje (PET, PP, HDPE) o las etiquetas del empaque.</p>
-                <p>2. La Inteligencia Artificial analizará la composición química y los materiales físicos.</p>
-                <p>3. Evalúa si la publicidad ecológica del producto es real o cae en **Greenwashing** frente a los 12 Principios de la Química Verde.</p>
+                <p>1. Fotografía el producto, el símbolo de reciclaje (PET, PP, HDPE) o las etiquetas del empaque (hasta 2 fotos).</p>
+                <p>2. El sistema evaluará la composición química y los materiales físicos.</p>
+                <p>3. Determina si la publicidad ecológica del producto es real o cae en **Greenwashing** frente a los 12 Principios de la Química Verde.</p>
             </div>
 
         </section>
@@ -156,7 +156,7 @@
                 </div>
                 <h3 class="text-lg font-semibold text-slate-200">Esperando captura</h3>
                 <p class="text-sm text-slate-400 max-w-md mt-2">
-                    Captura una imagen del producto o empaque para analizar su nivel de sostenibilidad, riesgos de greenwashing y materiales.
+                    Captura una o dos imágenes del producto o empaque para analizar su nivel de sostenibilidad, riesgos de greenwashing y materiales.
                 </p>
             </div>
 
@@ -167,7 +167,7 @@
                     <div class="absolute inset-0 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin"></div>
                     <i class="fa-solid fa-flask absolute inset-0 flex items-center justify-center text-emerald-400 text-xl"></i>
                 </div>
-                <h3 class="text-lg font-semibold text-slate-200">Analizando producto con Nemotron VL...</h3>
+                <h3 class="text-lg font-semibold text-slate-200">Procesando análisis del producto...</h3>
                 <p class="text-sm text-slate-400 max-w-sm mt-2">
                     Identificando composición de materiales, reciclabilidad y auditando afirmaciones ecológicas...
                 </p>
@@ -286,24 +286,24 @@
         <div class="glass-card rounded-2xl p-6 max-w-md w-full border border-slate-700 shadow-2xl space-y-4">
             <div class="flex items-center justify-between">
                 <h3 class="font-bold text-lg text-slate-100 flex items-center gap-2">
-                    <i class="fa-solid fa-key text-amber-400"></i> Clave API de OpenRouter
+                    <i class="fa-solid fa-key text-amber-400"></i> Configuración de Conexión
                 </h3>
                 <button id="closeKeyModal" class="text-slate-400 hover:text-white text-lg">&times;</button>
             </div>
             <p class="text-xs text-slate-300 leading-relaxed">
-                Aquí puedes gestionar tu clave personalizada de OpenRouter:
+                Aquí puedes gestionar tu clave de acceso personalizada si lo requieres:
             </p>
             <input type="password" id="customApiKeyInput" placeholder="sk-or-v1-..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500">
             <div class="flex justify-end gap-2 pt-2">
                 <button id="clearApiKeyBtn" class="px-3 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white bg-slate-800">Limpiar</button>
-                <button id="saveApiKeyBtn" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-950 bg-emerald-400 hover:bg-emerald-300">Guardar Clave</button>
+                <button id="saveApiKeyBtn" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-950 bg-emerald-400 hover:bg-emerald-300">Guardar</button>
             </div>
         </div>
     </div>
 
     <!-- Application JavaScript Logic -->
     <script>
-        // Configuración de Firebase integrada (disponible para uso en app o analíticas)
+        // Configuración de Firebase integrada
         const firebaseConfig = {
             apiKey: "AIzaSyC_MyjSFLB-mHDWWaOfAlRetLDB_pAxgR0",
             authDomain: "ango-592a4.firebaseapp.com",
@@ -317,11 +317,11 @@
 
         // System state and DOM elements
         let stream = null;
-        let capturedBase64 = null; // Una sola imagen optimizada para velocidad
+        let capturedImagesArray = []; // Guarda hasta 2 imágenes
         let customApiKey = localStorage.getItem('openrouter_api_key') || "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";
 
         const video = document.getElementById('webcamVideo');
-        const imagePreview = document.getElementById('imagePreview');
+        const imagePreviewGrid = document.getElementById('imagePreviewGrid');
         const uploadPlaceholder = document.getElementById('uploadPlaceholder');
         const captureCanvas = document.getElementById('captureCanvas');
         const toggleCameraBtn = document.getElementById('toggleCameraBtn');
@@ -347,10 +347,10 @@
         // Initialize API Key status
         updateKeyStatusUI();
 
-        // System Prompt defining AI behavior and output format
+        // System Prompt defining behavior and output format discretely
         const SYSTEM_PROMPT = `
 Eres un científico experto en Química Verde, sostenibilidad de materiales y detección de Greenwashing.
-Tu tarea es analizar la fotografía de un producto o empaque capturada por el usuario.
+Tu tarea es analizar la o las fotografías (máximo 2) de un producto o empaque capturadas por el usuario.
 
 Debes extraer el material principal (ej: Polipropileno PP, PET, HDPE, cartón, aluminio, vidrios, derivados de petróleo, biodegradables, etc.), evaluar si existe GREENWASHING (por ejemplo: vender plástico de polipropileno no biodegradable como "bolsa ecológica" o "amigable con el planeta") y verificar su alineación con los 12 Principios de la Química Verde.
 
@@ -392,8 +392,57 @@ Debes responder ÚNICAMENTE en formato JSON válido estructurado exactamente as�
 }
 `;
 
+        // Render visual grid thumbnails for up to 2 images
+        function updateImagesPreviewUI() {
+            imagePreviewGrid.innerHTML = '';
+            if (capturedImagesArray.length > 0) {
+                capturedImagesArray.forEach((imgUrl, index) => {
+                    const container = document.createElement('div');
+                    container.className = "relative group aspect-square rounded-lg overflow-hidden border border-slate-700 bg-slate-900";
+                    
+                    const img = document.createElement('img');
+                    img.src = imgUrl;
+                    img.className = "w-full h-full object-cover";
+                    
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = "absolute top-1 right-1 bg-rose-600 hover:bg-rose-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs shadow-md transition";
+                    removeBtn.innerHTML = "&times;";
+                    removeBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        capturedImagesArray.splice(index, 1);
+                        updateImagesPreviewUI();
+                    };
+
+                    container.appendChild(img);
+                    container.appendChild(removeBtn);
+                    imagePreviewGrid.appendChild(container);
+                });
+
+                imagePreviewGrid.classList.remove('hidden');
+                uploadPlaceholder.classList.add('hidden');
+                analyzeBtn.disabled = false;
+            } else {
+                imagePreviewGrid.classList.add('hidden');
+                if (!stream) uploadPlaceholder.classList.remove('hidden');
+                analyzeBtn.disabled = true;
+            }
+
+            // Actualizar texto del botón según el cupo
+            if (capturedImagesArray.length >= 2) {
+                cameraBtnText.textContent = "Límite 2 fotos";
+            } else if (stream) {
+                cameraBtnText.textContent = `Tomar Foto (${capturedImagesArray.length}/2)`;
+            } else {
+                cameraBtnText.textContent = "Iniciar Cámara";
+            }
+        }
+
         // Camera control functions
         async function startCamera() {
+            if (capturedImagesArray.length >= 2) {
+                alert("Ya has capturado el límite de 2 imágenes.");
+                return;
+            }
             try {
                 stream = await navigator.mediaDevices.getUserMedia({
                     video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
@@ -401,12 +450,11 @@ Debes responder ÚNICAMENTE en formato JSON válido estructurado exactamente as�
                 });
                 video.srcObject = stream;
                 video.classList.remove('hidden');
-                imagePreview.classList.add('hidden');
+                imagePreviewGrid.classList.add('hidden');
                 uploadPlaceholder.classList.add('hidden');
-                cameraBtnText.textContent = "Detener Cámara";
-                analyzeBtn.disabled = false;
+                updateImagesPreviewUI();
             } catch (err) {
-                alert("No se pudo acceder a la cámara. Recuerda que GitHub Pages usa HTTPS para habilitar la cámara de forma segura.");
+                alert("No se pudo acceder a la cámara. Asegúrese de utilizar un entorno seguro (HTTPS).");
                 console.error(err);
             }
         }
@@ -417,37 +465,40 @@ Debes responder ÚNICAMENTE en formato JSON válido estructurado exactamente as�
                 stream = null;
             }
             video.classList.add('hidden');
-            cameraBtnText.textContent = "Iniciar Cámara";
-            if (!capturedBase64) {
-                uploadPlaceholder.classList.remove('hidden');
-                analyzeBtn.disabled = true;
-            }
+            updateImagesPreviewUI();
         }
 
         toggleCameraBtn.addEventListener('click', () => {
             if (stream) {
-                stopCamera();
+                captureFrame();
             } else {
                 startCamera();
             }
         });
 
-        // Handle File Upload (Single image for max speed)
+        // Handle File Upload (Soporta seleccionar o añadir hasta 2 imágenes)
         fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
+            const files = Array.from(e.target.files);
+            if (!files || files.length === 0) return;
 
             stopCamera();
 
-            const reader = new FileReader();
-            reader.onload = (evt) => {
-                imagePreview.src = evt.target.result;
-                imagePreview.classList.remove('hidden');
-                uploadPlaceholder.classList.add('hidden');
-                capturedBase64 = evt.target.result;
-                analyzeBtn.disabled = false;
-            };
-            reader.readAsDataURL(file);
+            const availableSlots = 2 - capturedImagesArray.length;
+            const filesToProcess = files.slice(0, availableSlots);
+
+            let processed = 0;
+            filesToProcess.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    capturedImagesArray.push(evt.target.result);
+                    processed++;
+                    if (processed === filesToProcess.length) {
+                        updateImagesPreviewUI();
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+            fileInput.value = "";
         });
 
         // Capture frame from active camera
@@ -458,22 +509,20 @@ Debes responder ÚNICAMENTE en formato JSON válido estructurado exactamente as�
                 const ctx = captureCanvas.getContext('2d');
                 ctx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
                 const dataUrl = captureCanvas.toDataURL('image/jpeg', 0.85);
-                capturedBase64 = dataUrl;
-                imagePreview.src = dataUrl;
-                video.classList.add('hidden');
-                imagePreview.classList.remove('hidden');
+                
+                capturedImagesArray.push(dataUrl);
                 stopCamera();
             }
         }
 
-        // Trigger AI Analysis via OpenRouter Nemotron VL API
+        // Trigger Analysis Process
         analyzeBtn.addEventListener('click', async () => {
             if (stream && !video.classList.contains('hidden')) {
                 captureFrame();
             }
 
-            if (!capturedBase64) {
-                alert("Por favor toma una foto o carga una imagen primero.");
+            if (capturedImagesArray.length === 0) {
+                alert("Por favor toma una foto o carga al menos una imagen primero.");
                 return;
             }
 
@@ -485,11 +534,11 @@ Debes responder ÚNICAMENTE en formato JSON válido estructurado exactamente as�
             analyzeBtn.disabled = true;
 
             try {
-                const analysisResult = await callNemotronVisionApi(capturedBase64);
+                const analysisResult = await processVisionData(capturedImagesArray);
                 renderResults(analysisResult);
             } catch (error) {
-                console.error("Error analizando la imagen:", error);
-                alert("Ocurrió un error al analizar con la IA: " + error.message);
+                console.error("Error en el procesamiento:", error);
+                alert("No se pudo completar el análisis del producto. Verifique su conexión.");
                 idleState.classList.remove('hidden');
             } finally {
                 loadingState.classList.add('hidden');
@@ -498,10 +547,22 @@ Debes responder ÚNICAMENTE en formato JSON válido estructurado exactamente as�
             }
         });
 
-        // OpenRouter Nemotron Multimodal API Call Handler
-        async function callNemotronVisionApi(imageUrl) {
+        // API Handler Backend Connection
+        async function processVisionData(imagesArray) {
             const apiKey = customApiKey;
             const apiUrl = "https://openrouter.ai/api/v1/chat/completions";
+
+            // Construir payload admitiendo hasta 2 imágenes
+            let userContentParts = [
+                { type: "text", text: "Analiza el material de este producto y evalúa su greenwashing/química verde según las instrucciones." }
+            ];
+
+            imagesArray.forEach(imgUrl => {
+                userContentParts.push({
+                    type: "image_url",
+                    image_url: { url: imgUrl }
+                });
+            });
 
             const payload = {
                 model: "nvidia/nemotron-3.5-super-vl:free",
@@ -512,10 +573,7 @@ Debes responder ÚNICAMENTE en formato JSON válido estructurado exactamente as�
                     },
                     {
                         role: "user",
-                        content: [
-                            { type: "text", text: "Analiza el material de este producto y evalúa su greenwashing/química verde según las instrucciones." },
-                            { type: "image_url", image_url: { url: imageUrl } }
-                        ]
+                        content: userContentParts
                     }
                 ]
             };
@@ -531,7 +589,7 @@ Debes responder ÚNICAMENTE en formato JSON válido estructurado exactamente as�
                             'Content-Type': 'application/json',
                             'Authorization': `Bearer ${apiKey}`,
                             'HTTP-Referer': window.location.href,
-                            'X-Title': 'EcoScan IA'
+                            'X-Title': 'BioGreen'
                         },
                         body: JSON.stringify(payload)
                     });
@@ -545,17 +603,16 @@ Debes responder ÚNICAMENTE en formato JSON válido estructurado exactamente as�
 
             if (!response || !response.ok) {
                 const errText = await response?.text();
-                throw new Error(`Respuesta de la API no válida (Status: ${response?.status}) - ${errText}`);
+                throw new Error(`Error en el servicio (Status: ${response?.status}) - ${errText}`);
             }
 
             const data = await response.json();
             let rawJsonText = data.choices?.[0]?.message?.content;
 
             if (!rawJsonText) {
-                throw new Error("No se recibió respuesta estructurada de la IA.");
+                throw new Error("No se obtuvo respuesta del sistema de procesamiento.");
             }
 
-            // Limpieza de bloques markdown si el modelo los incluye
             rawJsonText = rawJsonText.trim();
             if (rawJsonText.startsWith("```json")) {
                 rawJsonText = rawJsonText.replace(/^```json/, "").replace(/```$/, "").trim();
@@ -566,13 +623,11 @@ Debes responder ÚNICAMENTE en formato JSON válido estructurado exactamente as�
             return JSON.parse(rawJsonText);
         }
 
-        // Render AI Results onto the Dashboard
+        // Render Results onto the Dashboard
         function renderResults(data) {
-            // General Info
             document.getElementById('productTitle').textContent = data.productName || "Producto Analizado";
             document.getElementById('verdictSummary').textContent = data.summaryVerdict || "";
 
-            // Greenwashing Risk Badge
             const gw = data.greenwashingAudit || {};
             const gwBadge = document.getElementById('verdictBadge');
             const gwRisk = (gw.riskLevel || 'bajo').toLowerCase();
@@ -586,7 +641,6 @@ Debes responder ÚNICAMENTE en formato JSON válido estructurado exactamente as�
                 gwBadge.className = "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/40";
             }
 
-            // Material Tab
             const mat = data.materialInfo || {};
             document.getElementById('materialTypeBadge').textContent = mat.name ? mat.name.split('/')[0] : "Material";
             document.getElementById('matName').textContent = mat.name || "No identificado";
@@ -595,7 +649,6 @@ Debes responder ÚNICAMENTE en formato JSON válido estructurado exactamente as�
             document.getElementById('matEol').textContent = mat.endOfLife || "N/D";
             document.getElementById('matDescription').textContent = mat.description || "Sin detalles adicionales.";
 
-            // Greenwashing Tab
             const gwRiskBadge = document.getElementById('gwRiskBadge');
             gwRiskBadge.textContent = `Riesgo: ${gw.riskLevel || 'N/A'}`;
             gwRiskBadge.className = gwRisk === 'alto' ? "px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30" : "px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30";
@@ -612,7 +665,6 @@ Debes responder ÚNICAMENTE en formato JSON válido estructurado exactamente as�
                 flagsList.appendChild(li);
             });
 
-            // 12 Principles Tab
             const pContainer = document.getElementById('principlesContainer');
             pContainer.innerHTML = '';
             (data.greenChemistryPrinciples || []).forEach(p => {
@@ -642,7 +694,6 @@ Debes responder ÚNICAMENTE en formato JSON válido estructurado exactamente as�
                 pContainer.appendChild(card);
             });
 
-            // Show result view
             resultState.classList.remove('hidden');
             switchTab('material');
         }
@@ -712,9 +763,9 @@ Debes responder ÚNICAMENTE en formato JSON válido estructurado exactamente as�
 
         function updateKeyStatusUI() {
             if (customApiKey) {
-                keyStatusText.textContent = "API Key Activa";
+                keyStatusText.textContent = "Sistema activo";
             } else {
-                keyStatusText.textContent = "Sin API Key";
+                keyStatusText.textContent = "Configurar sistema";
             }
         }
     </script>
