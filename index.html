@@ -387,7 +387,7 @@
         // System state and DOM elements
         let stream = null;
         let capturedImagesArray = []; // Guarda hasta 2 imágenes
-        let customApiKey = localStorage.getItem('openrouter_api_key') || "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";
+        let customApiKey = localStorage.getItem('openrouter_api_key') || "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";
         let lastAnalysisResult = null; // Guardar último resultado para el marco legal dinámico
 
         let deferredPrompt = null;
@@ -655,7 +655,8 @@ Debes responder ÚNICAMENTE en formato JSON válido estructurado exactamente as�
             });
 
             const payload = {
-                model: "nvidia/nemotron-3.5-super-vl:free",
+                model: "google/gemini-2.5-flash",
+                max_tokens: 4000,
                 messages: [
                     {
                         role: "system",
@@ -677,7 +678,7 @@ Debes responder ÚNICAMENTE en formato JSON válido estructurado exactamente as�
                         headers: {
                             'Content-Type': 'application/json',
                             'Authorization': `Bearer ${apiKey}`,
-                            'HTTP-Referer': window.location.href,
+                            'HTTP-Referer': window.location.origin,
                             'X-Title': 'BioGreen'
                         },
                         body: JSON.stringify(payload)
